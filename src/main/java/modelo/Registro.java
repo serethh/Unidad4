@@ -63,7 +63,9 @@ public class Registro {
         return observaciones;
     }
 
-    public void setObservaciones(String observaciones) {
+    public void setObservaciones(
+            String observaciones
+    ) {
         this.observaciones = observaciones;
     }
 
@@ -71,7 +73,9 @@ public class Registro {
         return diagnostico;
     }
 
-    public void setDiagnostico(String diagnostico) {
+    public void setDiagnostico(
+            String diagnostico
+    ) {
         this.diagnostico = diagnostico;
     }
 
@@ -87,7 +91,9 @@ public class Registro {
         return fechaRegistro;
     }
 
-    public void setFechaRegistro(LocalDate fechaRegistro) {
+    public void setFechaRegistro(
+            LocalDate fechaRegistro
+    ) {
         this.fechaRegistro = fechaRegistro;
     }
 
@@ -95,7 +101,9 @@ public class Registro {
         return horaRegistro;
     }
 
-    public void setHoraRegistro(LocalTime horaRegistro) {
+    public void setHoraRegistro(
+            LocalTime horaRegistro
+    ) {
         this.horaRegistro = horaRegistro;
     }
 }

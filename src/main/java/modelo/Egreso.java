@@ -34,7 +34,9 @@ public class Egreso {
         return fechaEgreso;
     }
 
-    public void setFechaEgreso(LocalDate fechaEgreso) {
+    public void setFechaEgreso(
+            LocalDate fechaEgreso
+    ) {
         this.fechaEgreso = fechaEgreso;
     }
 
@@ -42,7 +44,9 @@ public class Egreso {
         return horaEgreso;
     }
 
-    public void setHoraEgreso(LocalTime horaEgreso) {
+    public void setHoraEgreso(
+            LocalTime horaEgreso
+    ) {
         this.horaEgreso = horaEgreso;
     }
 
@@ -50,7 +54,9 @@ public class Egreso {
         return observaciones;
     }
 
-    public void setObservaciones(String observaciones) {
+    public void setObservaciones(
+            String observaciones
+    ) {
         this.observaciones = observaciones;
     }
 }

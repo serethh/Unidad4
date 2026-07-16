@@ -6,12 +6,15 @@ Componente2/Reloj.class
 modelo/Ingreso.class
 modelo/PacienteDoctor.class
 Componente1/ContenedorHospital.class
+dao/RegistroDAO.class
+dao/DoctorDAO.class
 modelo/Egreso.class
 Componente1/ContenedorHospital$1.class
 conexion/Conexion.class
 modelo/Paciente.class
 controlador/ControladorHospital.class
 Componente1/ContenedorHospital$RendererColores.class
+principal/Principal.class
 modelo/Registro.class
-com/mycompany/proyectou4/Main.class
+dao/EgresoDAO.class
 modelo/Doctor.class

@@ -14,7 +14,20 @@ public class Ingreso {
     private String estado;
 
     public Ingreso() {
-        estado = "INGRESADO";
+    }
+
+    public Ingreso(
+            int idPaciente,
+            BigDecimal peso,
+            LocalDate fechaIngreso,
+            LocalTime horaIngreso,
+            String estado
+    ) {
+        this.idPaciente = idPaciente;
+        this.peso = peso;
+        this.fechaIngreso = fechaIngreso;
+        this.horaIngreso = horaIngreso;
+        this.estado = estado;
     }
 
     public int getIdIngreso() {
@@ -45,7 +58,9 @@ public class Ingreso {
         return fechaIngreso;
     }
 
-    public void setFechaIngreso(LocalDate fechaIngreso) {
+    public void setFechaIngreso(
+            LocalDate fechaIngreso
+    ) {
         this.fechaIngreso = fechaIngreso;
     }
 
@@ -53,7 +68,9 @@ public class Ingreso {
         return horaIngreso;
     }
 
-    public void setHoraIngreso(LocalTime horaIngreso) {
+    public void setHoraIngreso(
+            LocalTime horaIngreso
+    ) {
         this.horaIngreso = horaIngreso;
     }
 

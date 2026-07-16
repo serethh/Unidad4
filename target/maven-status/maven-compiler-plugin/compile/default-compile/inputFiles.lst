@@ -1,10 +1,12 @@
 /Users/evergarcia/Desktop/Unidad4/src/main/java/Componente1/ContenedorHospital.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/Componente2/Reloj.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/Interfaz/Hospital.java
-/Users/evergarcia/Desktop/Unidad4/src/main/java/com/mycompany/proyectou4/Main.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/conexion/Conexion.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/controlador/ControladorHospital.java
+/Users/evergarcia/Desktop/Unidad4/src/main/java/dao/DoctorDAO.java
+/Users/evergarcia/Desktop/Unidad4/src/main/java/dao/EgresoDAO.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/dao/HospitalDAO.java
+/Users/evergarcia/Desktop/Unidad4/src/main/java/dao/RegistroDAO.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/modelo/Doctor.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/modelo/Egreso.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/modelo/Ingreso.java
@@ -12,3 +14,4 @@
 /Users/evergarcia/Desktop/Unidad4/src/main/java/modelo/Paciente.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/modelo/PacienteDoctor.java
 /Users/evergarcia/Desktop/Unidad4/src/main/java/modelo/Registro.java
+/Users/evergarcia/Desktop/Unidad4/src/main/java/principal/Principal.java

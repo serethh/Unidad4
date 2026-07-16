@@ -1,6 +1,7 @@
 package modelo;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 
 public class Paciente {
@@ -12,29 +13,24 @@ public class Paciente {
     private String genero;
     private LocalDate fechaNacimiento;
     private boolean activo;
+    private LocalDateTime fechaRegistro;
 
     public Paciente() {
-        activo = true;
     }
 
-    public int calcularEdad() {
-        if (fechaNacimiento == null) {
-            return 0;
-        }
-        return Period.between(fechaNacimiento, LocalDate.now()).getYears();
-    }
-
-    public String getNombreCompleto() {
-        String materno = apellidoMaterno == null || apellidoMaterno.isBlank()
-                ? ""
-                : " " + apellidoMaterno;
-
-        return nombre + " " + apellidoPaterno + materno;
-    }
-
-    @Override
-    public String toString() {
-        return getNombreCompleto();
+    public Paciente(
+            String nombre,
+            String apellidoPaterno,
+            String apellidoMaterno,
+            String genero,
+            LocalDate fechaNacimiento
+    ) {
+        this.nombre = nombre;
+        this.apellidoPaterno = apellidoPaterno;
+        this.apellidoMaterno = apellidoMaterno;
+        this.genero = genero;
+        this.fechaNacimiento = fechaNacimiento;
+        this.activo = true;
     }
 
     public int getIdPaciente() {
@@ -57,7 +53,9 @@ public class Paciente {
         return apellidoPaterno;
     }
 
-    public void setApellidoPaterno(String apellidoPaterno) {
+    public void setApellidoPaterno(
+            String apellidoPaterno
+    ) {
         this.apellidoPaterno = apellidoPaterno;
     }
 
@@ -65,7 +63,9 @@ public class Paciente {
         return apellidoMaterno;
     }
 
-    public void setApellidoMaterno(String apellidoMaterno) {
+    public void setApellidoMaterno(
+            String apellidoMaterno
+    ) {
         this.apellidoMaterno = apellidoMaterno;
     }
 
@@ -81,7 +81,9 @@ public class Paciente {
         return fechaNacimiento;
     }
 
-    public void setFechaNacimiento(LocalDate fechaNacimiento) {
+    public void setFechaNacimiento(
+            LocalDate fechaNacimiento
+    ) {
         this.fechaNacimiento = fechaNacimiento;
     }
 
@@ -92,4 +94,46 @@ public class Paciente {
     public void setActivo(boolean activo) {
         this.activo = activo;
     }
+
+    public LocalDateTime getFechaRegistro() {
+        return fechaRegistro;
+    }
+
+    public void setFechaRegistro(
+            LocalDateTime fechaRegistro
+    ) {
+        this.fechaRegistro = fechaRegistro;
+    }
+
+    public String getNombreCompleto() {
+
+        String nombreCompleto =
+                nombre + " " + apellidoPaterno;
+
+        if (
+            apellidoMaterno != null
+            && !apellidoMaterno.isBlank()
+        ) {
+            nombreCompleto +=
+                    " " + apellidoMaterno;
+        }
+
+        return nombreCompleto;
+    }
+
+    @Override
+    public String toString() {
+        return getNombreCompleto();
+    }
+    public int calcularEdad() {
+
+    if (fechaNacimiento == null) {
+        return 0;
+    }
+
+    return Period.between(
+            fechaNacimiento,
+            LocalDate.now()
+    ).getYears();
+}
 }

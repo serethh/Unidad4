@@ -4,16 +4,24 @@ import java.time.LocalDateTime;
 
 public class PacienteDoctor {
 
+    private int idPacienteDoctor;
     private int idPaciente;
     private int idDoctor;
     private LocalDateTime fechaAsignacion;
+    private boolean activo;
 
     public PacienteDoctor() {
     }
 
-    public PacienteDoctor(int idPaciente, int idDoctor) {
-        this.idPaciente = idPaciente;
-        this.idDoctor = idDoctor;
+    public int getIdPacienteDoctor() {
+        return idPacienteDoctor;
+    }
+
+    public void setIdPacienteDoctor(
+            int idPacienteDoctor
+    ) {
+        this.idPacienteDoctor =
+                idPacienteDoctor;
     }
 
     public int getIdPaciente() {
@@ -36,7 +44,17 @@ public class PacienteDoctor {
         return fechaAsignacion;
     }
 
-    public void setFechaAsignacion(LocalDateTime fechaAsignacion) {
+    public void setFechaAsignacion(
+            LocalDateTime fechaAsignacion
+    ) {
         this.fechaAsignacion = fechaAsignacion;
+    }
+
+    public boolean isActivo() {
+        return activo;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
     }
 }

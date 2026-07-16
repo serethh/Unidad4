@@ -8,23 +8,11 @@ public class Doctor {
     private String apellidoMaterno;
     private String especialidad;
     private String cedulaProfesional;
+    private String telefono;
+    private String correo;
     private boolean activo;
 
     public Doctor() {
-        activo = true;
-    }
-
-    public String getNombreCompleto() {
-        String materno = apellidoMaterno == null || apellidoMaterno.isBlank()
-                ? ""
-                : " " + apellidoMaterno;
-
-        return nombre + " " + apellidoPaterno + materno;
-    }
-
-    @Override
-    public String toString() {
-        return getNombreCompleto();
     }
 
     public int getIdDoctor() {
@@ -47,7 +35,9 @@ public class Doctor {
         return apellidoPaterno;
     }
 
-    public void setApellidoPaterno(String apellidoPaterno) {
+    public void setApellidoPaterno(
+            String apellidoPaterno
+    ) {
         this.apellidoPaterno = apellidoPaterno;
     }
 
@@ -55,7 +45,9 @@ public class Doctor {
         return apellidoMaterno;
     }
 
-    public void setApellidoMaterno(String apellidoMaterno) {
+    public void setApellidoMaterno(
+            String apellidoMaterno
+    ) {
         this.apellidoMaterno = apellidoMaterno;
     }
 
@@ -63,7 +55,9 @@ public class Doctor {
         return especialidad;
     }
 
-    public void setEspecialidad(String especialidad) {
+    public void setEspecialidad(
+            String especialidad
+    ) {
         this.especialidad = especialidad;
     }
 
@@ -71,8 +65,27 @@ public class Doctor {
         return cedulaProfesional;
     }
 
-    public void setCedulaProfesional(String cedulaProfesional) {
-        this.cedulaProfesional = cedulaProfesional;
+    public void setCedulaProfesional(
+            String cedulaProfesional
+    ) {
+        this.cedulaProfesional =
+                cedulaProfesional;
+    }
+
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getCorreo() {
+        return correo;
+    }
+
+    public void setCorreo(String correo) {
+        this.correo = correo;
     }
 
     public boolean isActivo() {
@@ -81,5 +94,25 @@ public class Doctor {
 
     public void setActivo(boolean activo) {
         this.activo = activo;
+    }
+
+    public String getNombreCompleto() {
+
+        String completo =
+                nombre + " " + apellidoPaterno;
+
+        if (
+            apellidoMaterno != null
+            && !apellidoMaterno.isBlank()
+        ) {
+            completo += " " + apellidoMaterno;
+        }
+
+        return completo;
+    }
+
+    @Override
+    public String toString() {
+        return getNombreCompleto();
     }
 }

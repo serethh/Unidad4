@@ -4,28 +4,20 @@ public class IngresoPaciente {
 
     private int idIngreso;
     private int idPaciente;
-    private String nombreCompleto;
+    private String nombre;
+    private String apellidoPaterno;
+    private String apellidoMaterno;
 
     public IngresoPaciente() {
-    }
-
-    public IngresoPaciente(int idIngreso, int idPaciente,
-            String nombreCompleto) {
-        this.idIngreso = idIngreso;
-        this.idPaciente = idPaciente;
-        this.nombreCompleto = nombreCompleto;
-    }
-
-    @Override
-    public String toString() {
-        return nombreCompleto;
     }
 
     public int getIdIngreso() {
         return idIngreso;
     }
 
-    public void setIdIngreso(int idIngreso) {
+    public void setIdIngreso(
+            int idIngreso
+    ) {
         this.idIngreso = idIngreso;
     }
 
@@ -33,15 +25,61 @@ public class IngresoPaciente {
         return idPaciente;
     }
 
-    public void setIdPaciente(int idPaciente) {
+    public void setIdPaciente(
+            int idPaciente
+    ) {
         this.idPaciente = idPaciente;
     }
 
-    public String getNombreCompleto() {
-        return nombreCompleto;
+    public String getNombre() {
+        return nombre;
     }
 
-    public void setNombreCompleto(String nombreCompleto) {
-        this.nombreCompleto = nombreCompleto;
+    public void setNombre(
+            String nombre
+    ) {
+        this.nombre = nombre;
+    }
+
+    public String getApellidoPaterno() {
+        return apellidoPaterno;
+    }
+
+    public void setApellidoPaterno(
+            String apellidoPaterno
+    ) {
+        this.apellidoPaterno =
+                apellidoPaterno;
+    }
+
+    public String getApellidoMaterno() {
+        return apellidoMaterno;
+    }
+
+    public void setApellidoMaterno(
+            String apellidoMaterno
+    ) {
+        this.apellidoMaterno =
+                apellidoMaterno;
+    }
+
+    public String getNombreCompleto() {
+
+        String completo =
+                nombre + " " + apellidoPaterno;
+
+        if (apellidoMaterno != null
+                && !apellidoMaterno.isBlank()) {
+
+            completo +=
+                    " " + apellidoMaterno;
+        }
+
+        return completo;
+    }
+
+    @Override
+    public String toString() {
+        return getNombreCompleto();
     }
 }

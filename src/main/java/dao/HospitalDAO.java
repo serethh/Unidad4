@@ -19,307 +19,744 @@ import java.util.List;
 
 public class HospitalDAO {
 
-    public void guardarPacienteConIngreso(
-            Paciente paciente, Ingreso ingreso) throws SQLException {
+    public int guardarPacienteConIngreso(
+            Paciente paciente,
+            Ingreso ingreso
+    ) throws SQLException {
 
-        String sqlPaciente =
-                "INSERT INTO clinica.paciente "
-                + "(nombre, apellido_paterno, apellido_materno, "
-                + "genero, fecha_nacimiento) "
-                + "VALUES (?, ?, ?, ?, ?) "
-                + "RETURNING id_paciente";
+        String sqlPaciente = """
+            INSERT INTO clinica.paciente (
+                nombre,
+                apellido_paterno,
+                apellido_materno,
+                genero,
+                fecha_nacimiento
+            )
+            VALUES (?, ?, ?, ?, ?)
+            RETURNING id_paciente
+            """;
 
-        String sqlIngreso =
-                "INSERT INTO clinica.ingreso "
-                + "(id_paciente, peso, fecha_ingreso, hora_ingreso) "
-                + "VALUES (?, ?, ?, ?) "
-                + "RETURNING id_ingreso";
+        String sqlIngreso = """
+            INSERT INTO clinica.ingreso (
+                id_paciente,
+                peso,
+                fecha_ingreso,
+                hora_ingreso
+            )
+            VALUES (?, ?, ?, ?)
+            RETURNING id_ingreso
+            """;
 
-        try (Connection conn = Conexion.getConexion()) {
-            conn.setAutoCommit(false);
+        Connection conexion = null;
 
-            try {
-                try (PreparedStatement psPaciente =
-                             conn.prepareStatement(sqlPaciente)) {
+        try {
+            conexion = Conexion.getConexion();
 
-                    psPaciente.setString(1, paciente.getNombre());
-                    psPaciente.setString(
-                            2, paciente.getApellidoPaterno());
-                    psPaciente.setString(
-                            3, paciente.getApellidoMaterno());
-                    psPaciente.setString(4, paciente.getGenero());
-                    psPaciente.setDate(
-                            5,
-                            Date.valueOf(
-                                    paciente.getFechaNacimiento()));
+            conexion.setAutoCommit(false);
 
-                    try (ResultSet rs = psPaciente.executeQuery()) {
-                        if (!rs.next()) {
-                            throw new SQLException(
-                                    "No se obtuvo el ID del paciente.");
-                        }
+            conexion.setTransactionIsolation(
+                    Connection.TRANSACTION_READ_COMMITTED
+            );
 
-                        paciente.setIdPaciente(
-                                rs.getInt("id_paciente"));
+            int idPaciente;
+
+            try (
+                    PreparedStatement sentenciaPaciente
+                    = conexion.prepareStatement(sqlPaciente)) {
+                sentenciaPaciente.setString(
+                        1,
+                        paciente.getNombre()
+                );
+
+                sentenciaPaciente.setString(
+                        2,
+                        paciente.getApellidoPaterno()
+                );
+
+                sentenciaPaciente.setString(
+                        3,
+                        paciente.getApellidoMaterno()
+                );
+
+                sentenciaPaciente.setString(
+                        4,
+                        paciente.getGenero()
+                );
+
+                sentenciaPaciente.setDate(
+                        5,
+                        Date.valueOf(
+                                paciente.getFechaNacimiento()
+                        )
+                );
+
+                try (
+                        ResultSet resultado
+                        = sentenciaPaciente.executeQuery()) {
+                    if (!resultado.next()) {
+                        throw new SQLException(
+                                "No se generó el ID del paciente."
+                        );
                     }
+
+                    idPaciente
+                            = resultado.getInt("id_paciente");
+
+                    paciente.setIdPaciente(idPaciente);
+                }
+            }
+
+            ingreso.setIdPaciente(idPaciente);
+
+            int idIngreso;
+
+            try (
+                    PreparedStatement sentenciaIngreso
+                    = conexion.prepareStatement(sqlIngreso)) {
+                sentenciaIngreso.setInt(
+                        1,
+                        idPaciente
+                );
+
+                sentenciaIngreso.setBigDecimal(
+                        2,
+                        ingreso.getPeso()
+                );
+
+                sentenciaIngreso.setDate(
+                        3,
+                        Date.valueOf(
+                                ingreso.getFechaIngreso()
+                        )
+                );
+
+                sentenciaIngreso.setTime(
+                        4,
+                        Time.valueOf(
+                                ingreso.getHoraIngreso()
+                        )
+                );
+
+                try (
+                        ResultSet resultado
+                        = sentenciaIngreso.executeQuery()) {
+                    if (!resultado.next()) {
+                        throw new SQLException(
+                                "No se generó el ID del ingreso."
+                        );
+                    }
+
+                    idIngreso
+                            = resultado.getInt("id_ingreso");
+
+                    ingreso.setIdIngreso(idIngreso);
+                }
+            }
+
+            /*
+             * Confirma ambas inserciones.
+             */
+            conexion.commit();
+
+            return idIngreso;
+
+        } catch (SQLException e) {
+
+            if (conexion != null) {
+                try {
+                    /*
+                     * Revierte paciente e ingreso.
+                     */
+                    conexion.rollback();
+
+                } catch (SQLException rollbackError) {
+                    e.addSuppressed(rollbackError);
+                }
+            }
+
+            throw new SQLException(
+                    "No se guardó el paciente ni el ingreso. "
+                    + "La transacción fue revertida. "
+                    + e.getMessage(),
+                    e
+            );
+
+        } finally {
+
+            if (conexion != null) {
+                try {
+                    conexion.setAutoCommit(true);
+                } catch (SQLException e) {
+                    System.err.println(
+                            "No se pudo restaurar autoCommit: "
+                            + e.getMessage()
+                    );
                 }
 
-                ingreso.setIdPaciente(paciente.getIdPaciente());
-
-                try (PreparedStatement psIngreso =
-                             conn.prepareStatement(sqlIngreso)) {
-
-                    psIngreso.setInt(
-                            1, ingreso.getIdPaciente());
-                    psIngreso.setBigDecimal(
-                            2, ingreso.getPeso());
-                    psIngreso.setDate(
-                            3,
-                            Date.valueOf(
-                                    ingreso.getFechaIngreso()));
-                    psIngreso.setTime(
-                            4,
-                            Time.valueOf(
-                                    ingreso.getHoraIngreso()));
-
-                    try (ResultSet rs = psIngreso.executeQuery()) {
-                        if (!rs.next()) {
-                            throw new SQLException(
-                                    "No se obtuvo el ID del ingreso.");
-                        }
-
-                        ingreso.setIdIngreso(
-                                rs.getInt("id_ingreso"));
-                    }
+                try {
+                    conexion.close();
+                } catch (SQLException e) {
+                    System.err.println(
+                            "No se pudo cerrar la conexión: "
+                            + e.getMessage()
+                    );
                 }
-
-                conn.commit();
-
-            } catch (SQLException ex) {
-                conn.rollback();
-                throw ex;
-
-            } finally {
-                conn.setAutoCommit(true);
             }
         }
     }
 
-    public List<Doctor> listarDoctores() throws SQLException {
-        String sql =
-                "SELECT id_doctor, nombre, apellido_paterno, "
-                + "apellido_materno, especialidad, "
-                + "cedula_profesional, activo "
-                + "FROM clinica.doctor "
-                + "WHERE activo = TRUE "
-                + "ORDER BY apellido_paterno, nombre";
+    public List<Doctor> listarDoctores()
+            throws SQLException {
 
-        List<Doctor> lista = new ArrayList<>();
+        String sql = """
+        SELECT
+            id_doctor,
+            nombre,
+            apellido_paterno,
+            apellido_materno,
+            especialidad,
+            cedula_profesional,
+            telefono,
+            correo,
+            activo
+        FROM clinica.doctor
+        WHERE activo = TRUE
+        ORDER BY apellido_paterno, nombre
+        """;
 
-        try (Connection conn = Conexion.getConexion();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        List<Doctor> doctores
+                = new ArrayList<>();
 
-            while (rs.next()) {
+        try (
+                Connection conexion
+                = Conexion.getConexion(); PreparedStatement sentencia
+                = conexion.prepareStatement(sql); ResultSet resultado
+                = sentencia.executeQuery()) {
+
+            while (resultado.next()) {
+
                 Doctor doctor = new Doctor();
 
                 doctor.setIdDoctor(
-                        rs.getInt("id_doctor"));
+                        resultado.getInt(
+                                "id_doctor"
+                        )
+                );
+
                 doctor.setNombre(
-                        rs.getString("nombre"));
+                        resultado.getString(
+                                "nombre"
+                        )
+                );
+
                 doctor.setApellidoPaterno(
-                        rs.getString("apellido_paterno"));
+                        resultado.getString(
+                                "apellido_paterno"
+                        )
+                );
+
                 doctor.setApellidoMaterno(
-                        rs.getString("apellido_materno"));
+                        resultado.getString(
+                                "apellido_materno"
+                        )
+                );
+
                 doctor.setEspecialidad(
-                        rs.getString("especialidad"));
+                        resultado.getString(
+                                "especialidad"
+                        )
+                );
+
                 doctor.setCedulaProfesional(
-                        rs.getString("cedula_profesional"));
+                        resultado.getString(
+                                "cedula_profesional"
+                        )
+                );
+
+                doctor.setTelefono(
+                        resultado.getString(
+                                "telefono"
+                        )
+                );
+
+                doctor.setCorreo(
+                        resultado.getString(
+                                "correo"
+                        )
+                );
+
                 doctor.setActivo(
-                        rs.getBoolean("activo"));
+                        resultado.getBoolean(
+                                "activo"
+                        )
+                );
 
-                lista.add(doctor);
+                doctores.add(doctor);
             }
         }
 
-        return lista;
+        return doctores;
+    
     }
-
-    public List<IngresoPaciente> listarPendientesRegistro()
+ 
+    public List<IngresoPaciente>
+            listarPendientesRegistro()
             throws SQLException {
 
-        String sql =
-                "SELECT i.id_ingreso, p.id_paciente, "
-                + "CONCAT_WS(' ', p.nombre, "
-                + "p.apellido_paterno, p.apellido_materno) "
-                + "AS paciente "
-                + "FROM clinica.ingreso i "
-                + "INNER JOIN clinica.paciente p "
-                + "ON p.id_paciente = i.id_paciente "
-                + "LEFT JOIN clinica.registro r "
-                + "ON r.id_ingreso = i.id_ingreso "
-                + "WHERE r.id_registro IS NULL "
-                + "AND i.estado = 'INGRESADO' "
-                + "ORDER BY p.apellido_paterno, p.nombre";
+        String sql = """
+        SELECT
+            i.id_ingreso,
+            p.id_paciente,
+            p.nombre,
+            p.apellido_paterno,
+            p.apellido_materno
+        FROM clinica.ingreso i
+        INNER JOIN clinica.paciente p
+            ON p.id_paciente = i.id_paciente
+        LEFT JOIN clinica.registro r
+            ON r.id_ingreso = i.id_ingreso
+        WHERE r.id_registro IS NULL
+          AND i.estado = 'INGRESADO'
+        ORDER BY
+            p.apellido_paterno,
+            p.apellido_materno,
+            p.nombre
+        """;
 
-        return ejecutarConsultaIngresos(sql);
-    }
+        List<IngresoPaciente> pacientes
+                = new ArrayList<>();
 
-    public List<IngresoPaciente> listarPendientesEgreso()
-            throws SQLException {
+        try (
+                Connection conexion
+                = Conexion.getConexion(); PreparedStatement sentencia
+                = conexion.prepareStatement(sql); ResultSet resultado
+                = sentencia.executeQuery()) {
 
-        String sql =
-                "SELECT i.id_ingreso, p.id_paciente, "
-                + "CONCAT_WS(' ', p.nombre, "
-                + "p.apellido_paterno, p.apellido_materno) "
-                + "AS paciente "
-                + "FROM clinica.ingreso i "
-                + "INNER JOIN clinica.paciente p "
-                + "ON p.id_paciente = i.id_paciente "
-                + "LEFT JOIN clinica.egreso e "
-                + "ON e.id_ingreso = i.id_ingreso "
-                + "WHERE e.id_egreso IS NULL "
-                + "ORDER BY i.fecha_ingreso DESC, "
-                + "i.hora_ingreso DESC";
+            while (resultado.next()) {
 
-        return ejecutarConsultaIngresos(sql);
-    }
+                IngresoPaciente paciente
+                        = new IngresoPaciente();
 
-    private List<IngresoPaciente> ejecutarConsultaIngresos(
-            String sql) throws SQLException {
+                paciente.setIdIngreso(
+                        resultado.getInt(
+                                "id_ingreso"
+                        )
+                );
 
-        List<IngresoPaciente> lista = new ArrayList<>();
+                paciente.setIdPaciente(
+                        resultado.getInt(
+                                "id_paciente"
+                        )
+                );
 
-        try (Connection conn = Conexion.getConexion();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+                paciente.setNombre(
+                        resultado.getString(
+                                "nombre"
+                        )
+                );
 
-            while (rs.next()) {
-                IngresoPaciente ingresoPaciente =
-                        new IngresoPaciente();
+                paciente.setApellidoPaterno(
+                        resultado.getString(
+                                "apellido_paterno"
+                        )
+                );
 
-                ingresoPaciente.setIdIngreso(
-                        rs.getInt("id_ingreso"));
-                ingresoPaciente.setIdPaciente(
-                        rs.getInt("id_paciente"));
-                ingresoPaciente.setNombreCompleto(
-                        rs.getString("paciente"));
+                paciente.setApellidoMaterno(
+                        resultado.getString(
+                                "apellido_materno"
+                        )
+                );
 
-                lista.add(ingresoPaciente);
+                pacientes.add(paciente);
             }
         }
 
-        return lista;
+        return pacientes;
     }
 
-    public void guardarRegistro(Registro registro)
-            throws SQLException {
+    public int guardarRegistro(
+            Registro registro
+    ) throws SQLException {
 
-        String sqlRelacion =
-                "INSERT INTO clinica.paciente_doctor "
-                + "(id_paciente, id_doctor) "
-                + "VALUES (?, ?) "
-                + "ON CONFLICT (id_paciente, id_doctor) "
-                + "DO NOTHING";
+        String sqlRelacion = """
+        INSERT INTO clinica.paciente_doctor (
+            id_paciente,
+            id_doctor
+        )
+        VALUES (?, ?)
+        ON CONFLICT (id_paciente, id_doctor)
+        DO UPDATE SET activo = TRUE
+        """;
 
-        String sqlRegistro =
-                "INSERT INTO clinica.registro "
-                + "(id_ingreso, id_paciente, id_doctor, "
-                + "alergias, observaciones, diagnostico, salida) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?) "
-                + "RETURNING id_registro";
+        String sqlRegistro = """
+        INSERT INTO clinica.registro (
+            id_ingreso,
+            id_paciente,
+            id_doctor,
+            alergias,
+            observaciones,
+            diagnostico,
+            salida
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        RETURNING id_registro
+        """;
 
-        try (Connection conn = Conexion.getConexion()) {
-            conn.setAutoCommit(false);
+        Connection conexion = null;
 
-            try {
-                try (PreparedStatement psRelacion =
-                             conn.prepareStatement(sqlRelacion)) {
+        try {
 
-                    psRelacion.setInt(
-                            1, registro.getIdPaciente());
-                    psRelacion.setInt(
-                            2, registro.getIdDoctor());
-                    psRelacion.executeUpdate();
-                }
+            conexion = Conexion.getConexion();
 
-                try (PreparedStatement psRegistro =
-                             conn.prepareStatement(sqlRegistro)) {
+            conexion.setAutoCommit(false);
 
-                    psRegistro.setInt(
-                            1, registro.getIdIngreso());
-                    psRegistro.setInt(
-                            2, registro.getIdPaciente());
-                    psRegistro.setInt(
-                            3, registro.getIdDoctor());
-                    psRegistro.setString(
-                            4, registro.getAlergias());
-                    psRegistro.setString(
-                            5, registro.getObservaciones());
-                    psRegistro.setString(
-                            6, registro.getDiagnostico());
-                    psRegistro.setString(
-                            7, registro.getSalida());
+            conexion.setTransactionIsolation(
+                    Connection.TRANSACTION_READ_COMMITTED
+            );
 
-                    try (ResultSet rs =
-                                 psRegistro.executeQuery()) {
+            try (
+                    PreparedStatement relacion
+                    = conexion.prepareStatement(
+                            sqlRelacion
+                    )) {
 
-                        if (!rs.next()) {
-                            throw new SQLException(
-                                    "No se obtuvo el ID del registro.");
-                        }
+                        relacion.setInt(
+                                1,
+                                registro.getIdPaciente()
+                        );
 
-                        registro.setIdRegistro(
-                                rs.getInt("id_registro"));
+                        relacion.setInt(
+                                2,
+                                registro.getIdDoctor()
+                        );
+
+                        relacion.executeUpdate();
                     }
+
+                    int idRegistro;
+
+                    try (
+                            PreparedStatement sentencia
+                            = conexion.prepareStatement(
+                                    sqlRegistro
+                            )) {
+
+                                sentencia.setInt(
+                                        1,
+                                        registro.getIdIngreso()
+                                );
+
+                                sentencia.setInt(
+                                        2,
+                                        registro.getIdPaciente()
+                                );
+
+                                sentencia.setInt(
+                                        3,
+                                        registro.getIdDoctor()
+                                );
+
+                                sentencia.setString(
+                                        4,
+                                        registro.getAlergias()
+                                );
+
+                                sentencia.setString(
+                                        5,
+                                        registro.getObservaciones()
+                                );
+
+                                sentencia.setString(
+                                        6,
+                                        registro.getDiagnostico()
+                                );
+
+                                sentencia.setString(
+                                        7,
+                                        registro.getSalida()
+                                );
+
+                                try (
+                                        ResultSet resultado
+                                        = sentencia.executeQuery()) {
+
+                                    if (!resultado.next()) {
+
+                                        throw new SQLException(
+                                                "No se generó el ID del registro."
+                                        );
+                                    }
+
+                                    idRegistro
+                                            = resultado.getInt(
+                                                    "id_registro"
+                                            );
+
+                                    registro.setIdRegistro(
+                                            idRegistro
+                                    );
+                                }
+                            }
+
+                            conexion.commit();
+
+                            return idRegistro;
+
+        } catch (SQLException ex) {
+
+            if (conexion != null) {
+
+                try {
+
+                    conexion.rollback();
+
+                } catch (SQLException rollbackEx) {
+
+                    ex.addSuppressed(
+                            rollbackEx
+                    );
+                }
+            }
+
+            throw ex;
+
+        } finally {
+
+            if (conexion != null) {
+
+                try {
+
+                    conexion.setAutoCommit(true);
+
+                } catch (SQLException ex) {
+
+                    System.err.println(
+                            ex.getMessage()
+                    );
                 }
 
-                conn.commit();
+                try {
 
-            } catch (SQLException ex) {
-                conn.rollback();
-                throw ex;
+                    conexion.close();
 
-            } finally {
-                conn.setAutoCommit(true);
+                } catch (SQLException ex) {
+
+                    System.err.println(
+                            ex.getMessage()
+                    );
+                }
             }
         }
     }
 
-    public void guardarEgreso(Egreso egreso)
-            throws SQLException {
+    public int guardarEgreso(
+            Egreso egreso
+    ) throws SQLException {
 
-        String sql =
-                "INSERT INTO clinica.egreso "
-                + "(id_ingreso, fecha_egreso, "
-                + "hora_egreso, observaciones) "
-                + "VALUES (?, ?, ?, ?) "
-                + "RETURNING id_egreso";
+        String sql = """
+        INSERT INTO clinica.egreso (
+            id_ingreso,
+            fecha_egreso,
+            hora_egreso,
+            observaciones
+        )
+        VALUES (?, ?, ?, ?)
+        RETURNING id_egreso
+        """;
 
-        try (Connection conn = Conexion.getConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        Connection conexion = null;
 
-            ps.setInt(1, egreso.getIdIngreso());
-            ps.setDate(
-                    2,
-                    Date.valueOf(
-                            egreso.getFechaEgreso()));
-            ps.setTime(
-                    3,
-                    Time.valueOf(
-                            egreso.getHoraEgreso()));
-            ps.setString(
-                    4, egreso.getObservaciones());
+        try {
 
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    throw new SQLException(
-                            "No se obtuvo el ID del egreso.");
+            conexion = Conexion.getConexion();
+
+            conexion.setAutoCommit(false);
+
+            conexion.setTransactionIsolation(
+                    Connection.TRANSACTION_READ_COMMITTED
+            );
+
+            int idEgreso;
+
+            try (
+                    PreparedStatement sentencia
+                    = conexion.prepareStatement(sql)) {
+
+                sentencia.setInt(
+                        1,
+                        egreso.getIdIngreso()
+                );
+
+                sentencia.setDate(
+                        2,
+                        Date.valueOf(
+                                egreso.getFechaEgreso()
+                        )
+                );
+
+                sentencia.setTime(
+                        3,
+                        Time.valueOf(
+                                egreso.getHoraEgreso()
+                        )
+                );
+
+                sentencia.setString(
+                        4,
+                        egreso.getObservaciones()
+                );
+
+                try (
+                        ResultSet resultado
+                        = sentencia.executeQuery()) {
+
+                    if (!resultado.next()) {
+
+                        throw new SQLException(
+                                "No se generó el ID del egreso."
+                        );
+                    }
+
+                    idEgreso
+                            = resultado.getInt(
+                                    "id_egreso"
+                            );
+
+                    egreso.setIdEgreso(
+                            idEgreso
+                    );
+                }
+            }
+
+            conexion.commit();
+
+            return idEgreso;
+
+        } catch (SQLException ex) {
+
+            if (conexion != null) {
+
+                try {
+
+                    conexion.rollback();
+
+                } catch (SQLException rollbackEx) {
+
+                    ex.addSuppressed(
+                            rollbackEx
+                    );
+                }
+            }
+
+            throw ex;
+
+        } finally {
+
+            if (conexion != null) {
+
+                try {
+
+                    conexion.setAutoCommit(true);
+
+                } catch (SQLException ex) {
+
+                    System.err.println(
+                            ex.getMessage()
+                    );
                 }
 
-                egreso.setIdEgreso(
-                        rs.getInt("id_egreso"));
+                try {
+
+                    conexion.close();
+
+                } catch (SQLException ex) {
+
+                    System.err.println(
+                            ex.getMessage()
+                    );
+                }
             }
         }
     }
+    public List<IngresoPaciente>
+        listarPendientesEgreso()
+        throws SQLException {
+
+    String sql = """
+        SELECT
+            i.id_ingreso,
+            p.id_paciente,
+            p.nombre,
+            p.apellido_paterno,
+            p.apellido_materno
+        FROM clinica.ingreso i
+        INNER JOIN clinica.paciente p
+            ON p.id_paciente = i.id_paciente
+        LEFT JOIN clinica.egreso e
+            ON e.id_ingreso = i.id_ingreso
+        WHERE e.id_egreso IS NULL
+          AND i.estado IN (
+              'ALTA',
+              'HOSPITALIZADO'
+          )
+        ORDER BY
+            i.fecha_ingreso,
+            i.hora_ingreso
+        """;
+
+    List<IngresoPaciente> pacientes =
+            new ArrayList<>();
+
+    try (
+        Connection conexion =
+                Conexion.getConexion();
+
+        PreparedStatement sentencia =
+                conexion.prepareStatement(sql);
+
+        ResultSet resultado =
+                sentencia.executeQuery()
+    ) {
+
+        while (resultado.next()) {
+
+            IngresoPaciente paciente =
+                    new IngresoPaciente();
+
+            paciente.setIdIngreso(
+                    resultado.getInt(
+                            "id_ingreso"
+                    )
+            );
+
+            paciente.setIdPaciente(
+                    resultado.getInt(
+                            "id_paciente"
+                    )
+            );
+
+            paciente.setNombre(
+                    resultado.getString(
+                            "nombre"
+                    )
+            );
+
+            paciente.setApellidoPaterno(
+                    resultado.getString(
+                            "apellido_paterno"
+                    )
+            );
+
+            paciente.setApellidoMaterno(
+                    resultado.getString(
+                            "apellido_materno"
+                    )
+            );
+
+            pacientes.add(paciente);
+        }
+    }
+
+    return pacientes;
+}
 }
