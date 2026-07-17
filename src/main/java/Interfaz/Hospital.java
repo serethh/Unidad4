@@ -36,7 +36,12 @@ public class Hospital extends javax.swing.JFrame {
     private List<IngresoPaciente> listaPacientesVista
         = new ArrayList<>();
     
-    private ControladorHospital controlador;
+    private List<Object[]> listaTablaGeneral
+        = new ArrayList<>();
+        
+    private ControladorHospital  controlador;
+    
+
 
     public Hospital() {
         initComponents();
@@ -44,12 +49,13 @@ public class Hospital extends javax.swing.JFrame {
          configurarRestricciones();
          configurarCalculoEdad();
          configurarPestanaEgreso();
-         configurarTablaVista();
+         configurarTablaGeneral();
          configurarSeleccionVista();
 
         
 
     }
+
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -1014,8 +1020,7 @@ public class Hospital extends javax.swing.JFrame {
     private javax.swing.JTextField txtPeso;
     // End of variables declaration//GEN-END:variables
 
-   
-    public void setControlador(ControladorHospital controlador) {
+ public void setControlador(ControladorHospital controlador) {
         
         this.controlador=controlador;
 
@@ -1099,33 +1104,51 @@ public class Hospital extends javax.swing.JFrame {
             }
         }
 
-        if (fechaIngreso.getDate() != null) {
+    LocalDate fecha = null;
 
-            LocalDate fecha
-                    = fechaIngreso.getDate()
-                            .toInstant()
-                            .atZone(
-                                    ZoneId.systemDefault()
-                            )
-                            .toLocalDate();
+    if (fechaIngreso.getDate() != null) {
 
-            ingreso.setFechaIngreso(fecha);
-        }
+        fecha = fechaIngreso.getDate()
+                .toInstant()
+                .atZone(
+                        ZoneId.systemDefault()
+                )
+                .toLocalDate();
 
-        String horaTexto
-                = txtHoraIngreso.getText().trim();
+        if (fecha.isAfter(LocalDate.now())) {
 
-        if (!horaTexto.isBlank()) {
-
-            ingreso.setHoraIngreso(
-                    convertirHora(
-                            horaTexto,
-                            "La hora de ingreso"
-                    )
+            throw new IllegalArgumentException(
+                    "La fecha de ingreso no puede ser posterior a la fecha actual."
             );
         }
 
-        return ingreso;
+        ingreso.setFechaIngreso(fecha);
+    }
+
+    String horaTexto =
+            txtHoraIngreso.getText().trim();
+
+    if (!horaTexto.isBlank()) {
+
+        LocalTime hora =
+                convertirHora(
+                        horaTexto,
+                        "La hora de ingreso"
+                );
+
+        if (fecha != null
+                && fecha.equals(LocalDate.now())
+                && hora.isAfter(LocalTime.now())) {
+
+            throw new IllegalArgumentException(
+                    "La hora de ingreso no puede ser posterior a la hora actual."
+            );
+        }
+
+        ingreso.setHoraIngreso(hora);
+    }
+
+    return ingreso;
     }
 
     public Registro obtenerRegistroFormulario() {
@@ -1160,31 +1183,49 @@ public class Hospital extends javax.swing.JFrame {
 
         Egreso egreso = new Egreso();
 
-        if (fechaEgreso.getDate() != null) {
+    LocalDate fecha = null;
 
-            LocalDate fecha
-                    = fechaEgreso.getDate()
-                            .toInstant()
-                            .atZone(
-                                    ZoneId.systemDefault()
-                            )
-                            .toLocalDate();
+    if (fechaEgreso.getDate() != null) {
 
-            egreso.setFechaEgreso(fecha);
-        }
+        fecha = fechaEgreso.getDate()
+                .toInstant()
+                .atZone(
+                        ZoneId.systemDefault()
+                )
+                .toLocalDate();
 
-        String horaTexto
-                = txtHoraEgreso.getText().trim();
+        if (fecha.isAfter(LocalDate.now())) {
 
-        if (!horaTexto.isBlank()) {
-
-            egreso.setHoraEgreso(
-                    convertirHora(
-                            horaTexto,
-                            "La hora de egreso"
-                    )
+            throw new IllegalArgumentException(
+                    "La fecha de egreso no puede ser posterior a la fecha actual."
             );
         }
+
+        egreso.setFechaEgreso(fecha);
+    }
+
+    String horaTexto =
+            txtHoraEgreso.getText().trim();
+
+    if (!horaTexto.isBlank()) {
+
+        LocalTime hora =
+                convertirHora(
+                        horaTexto,
+                        "La hora de egreso"
+                );
+
+        if (fecha != null
+                && fecha.equals(LocalDate.now())
+                && hora.isAfter(LocalTime.now())) {
+
+            throw new IllegalArgumentException(
+                    "La hora de egreso no puede ser posterior a la hora actual."
+            );
+        }
+
+        egreso.setHoraEgreso(hora);
+    }
 
         egreso.setObservaciones(
                 txtObservacionesEgreso
@@ -1789,84 +1830,191 @@ public class Hospital extends javax.swing.JFrame {
     }
 }
   
-    private void configurarTablaVista() {
+   private void configurarTablaGeneral() {
 
-    contenedorHospital2.agregarColumna(
-            "Campo"
-    );
 
-    contenedorHospital2.agregarColumna(
-            "Información"
-    );
+    contenedorHospital2.agregarColumna("ID");
+    contenedorHospital2.agregarColumna("Paciente");
+    contenedorHospital2.agregarColumna("Género");
+    contenedorHospital2.agregarColumna("Edad");
+    contenedorHospital2.agregarColumna("Peso");
+    contenedorHospital2.agregarColumna("Fecha ingreso");
+    contenedorHospital2.agregarColumna("Hora ingreso");
+    contenedorHospital2.agregarColumna("Doctor");
+    contenedorHospital2.agregarColumna("Diagnóstico");
+    contenedorHospital2.agregarColumna("Estado");
 
     contenedorHospital2.permitirEdicion(false);
+
+    contenedorHospital2.registrarColor(
+            "HOSPITALIZADO",
+            new java.awt.Color(255, 190, 190)
+    );
+
+
+    contenedorHospital2.registrarColor(
+            "ALTA",
+            java.awt.Color.LIGHT_GRAY
+    );
 }
-    
-    public void mostrarDetallePaciente(
-        Object[] datos
+   
+public void cargarTablaGeneral(
+        List<Object[]> pacientes
+) {
+
+    listaTablaGeneral =
+            new ArrayList<>(pacientes);
+
+    mostrarFilasTabla(
+            listaTablaGeneral
+    );
+}
+
+private void mostrarFilasTabla(
+        List<Object[]> pacientes
 ) {
 
     contenedorHospital2.limpiarTabla();
 
-    if (datos == null) {
-        return;
-    }
+    for (Object[] datos : pacientes) {
 
-    String[] campos = {
-        "Paciente",
-        "Género",
-        "Fecha de nacimiento",
-        "Edad",
-        "Peso",
-        "Fecha de ingreso",
-        "Hora de ingreso",
-        "Estado",
-        "Doctor",
-        "Especialidad",
-        "Alergias",
-        "Observaciones de registro",
-        "Diagnóstico",
-        "Salida",
-        "Fecha de egreso",
-        "Hora de egreso",
-        "Observaciones de egreso"
-    };
+        Object doctor =
+                datos[7] == null
+                ? "Sin asignar"
+                : datos[7];
 
-    for (int i = 0; i < campos.length; i++) {
+        Object diagnostico =
+                datos[8] == null
+                ? "Sin diagnóstico"
+                : datos[8];
 
-        Object valor =
-                datos[i] == null
-                ? "Sin información"
-                : datos[i];
+        String estado =
+                datos[9] == null
+                ? "INGRESADO"
+                : datos[9]
+                        .toString()
+                        .toUpperCase();
 
         contenedorHospital2.agregarFila(
-                campos[i],
-                valor
+                datos[0], // id ingreso
+                datos[1], // paciente
+                datos[2], // género
+                datos[3], // edad
+                datos[4], // peso
+                datos[5], // fecha ingreso
+                datos[6], // hora ingreso
+                doctor,
+                diagnostico,
+                estado
+        );
+
+        int fila =
+                contenedorHospital2
+                        .getModelo()
+                        .getRowCount() - 1;
+
+        aplicarEstadoFila(
+                fila,
+                estado
         );
     }
 }
 
-    private void configurarSeleccionVista() {
+private void aplicarEstadoFila(
+        int fila,
+        String estado
+) {
+
+    switch (estado) {
+
+        case "ALTA" -> {
+
+            contenedorHospital2.bloquearFila(
+                    fila,
+                    "ALTA"
+            );
+        }
+
+        case "HOSPITALIZADO",
+             "HOSPITALIZACION" -> {
+
+            contenedorHospital2.colorearFila(
+                    fila,
+                    "HOSPITALIZADO"
+            );
+        }
+
+        case "INGRESADO" -> {
+
+            contenedorHospital2.colorearFila(
+                    fila,
+                    "INGRESADO"
+            );
+        }
+
+        default -> {
+
+            contenedorHospital2.quitarColorFila(
+                    fila
+            );
+        }
+    }
+}
+
+private void configurarSeleccionVista() {
 
     cbBuscarEgreso1.addActionListener(
-            evento -> {
-
-                IngresoPaciente paciente =
-                        obtenerPacienteVistaSeleccionado();
-
-                if (paciente == null) {
-                    contenedorHospital2.limpiarTabla();
-                    return;
-                }
-
-                if (controlador != null) {
-
-                    controlador.mostrarPacienteVista(
-                            paciente
-                    );
-                }
-            }
+            evento -> filtrarTablaPorPaciente()
     );
 }
+
+private void filtrarTablaPorPaciente() {
+
+    int indice =
+            cbBuscarEgreso1.getSelectedIndex();
+
+    /*
+     * Seleccione uno:
+     * vuelve a mostrar toda la tabla.
+     */
+    if (indice <= 0) {
+
+        mostrarFilasTabla(
+                listaTablaGeneral
+        );
+
+        return;
+    }
+
+    IngresoPaciente seleccionado =
+            obtenerPacienteVistaSeleccionado();
+
+    if (seleccionado == null) {
+
+        contenedorHospital2.limpiarTabla();
+        return;
+    }
+
+    List<Object[]> resultado =
+            new ArrayList<>();
+
+    for (Object[] fila
+            : listaTablaGeneral) {
+
+        int idIngreso =
+                ((Number) fila[0])
+                        .intValue();
+
+        if (idIngreso
+                == seleccionado.getIdIngreso()) {
+
+            resultado.add(fila);
+            break;
+        }
+    }
+
+    mostrarFilasTabla(resultado);
 }
 
+    
+}

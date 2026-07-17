@@ -51,6 +51,10 @@ public class ControladorHospital {
             
             vista.cargarPacientesVista(
                     dao.listarPacientes());
+            
+            vista.cargarTablaGeneral(
+                dao.listarVistaGeneral()
+);
 
         } catch (SQLException ex) {
 
@@ -326,27 +330,5 @@ cargarDatos();
         }
     }
     
-    public void mostrarPacienteVista(
-        IngresoPaciente paciente
-) {
 
-    try {
-
-        Object[] datos =
-                dao.obtenerDetallePaciente(
-                        paciente.getIdIngreso()
-                );
-
-        vista.mostrarDetallePaciente(
-                datos
-        );
-
-    } catch (SQLException ex) {
-
-        vista.mostrarError(
-                "No se pudo cargar la información del paciente.\n"
-                + ex.getMessage()
-        );
-    }
-}
 }

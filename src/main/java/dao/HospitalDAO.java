@@ -905,4 +905,71 @@ public class HospitalDAO {
         }
     }
 }
+        public List<Object[]> listarVistaGeneral()
+        throws SQLException {
+
+    String sql = """
+        SELECT
+            id_ingreso,
+            paciente,
+            genero,
+            edad,
+            peso,
+            fecha_ingreso,
+            hora_ingreso,
+            doctor,
+            diagnostico,
+            CASE
+                WHEN salida = 'ALTA'
+                    OR estado = 'ALTA'
+                    THEN 'ALTA'
+
+                WHEN salida = 'HOSPITALIZACION'
+                    OR estado = 'HOSPITALIZADO'
+                    THEN 'HOSPITALIZADO'
+
+                ELSE COALESCE(estado, 'INGRESADO')
+            END AS estado_visual
+        FROM clinica.vista_pacientes
+        ORDER BY
+            fecha_ingreso DESC,
+            hora_ingreso DESC,
+            paciente
+        """;
+
+    List<Object[]> pacientes = new ArrayList<>();
+
+    try (
+        Connection conexion =
+                Conexion.getConexion();
+
+        PreparedStatement sentencia =
+                conexion.prepareStatement(sql);
+
+        ResultSet resultado =
+                sentencia.executeQuery()
+    ) {
+
+        while (resultado.next()) {
+
+            Object[] fila = {
+                resultado.getInt("id_ingreso"),
+                resultado.getString("paciente"),
+                resultado.getString("genero"),
+                resultado.getInt("edad"),
+                resultado.getBigDecimal("peso"),
+                resultado.getDate("fecha_ingreso"),
+                resultado.getTime("hora_ingreso"),
+                resultado.getString("doctor"),
+                resultado.getString("diagnostico"),
+                resultado.getString("estado_visual")
+            };
+
+            pacientes.add(fila);
+        }
+    }
+
+    return pacientes;
+}
+        
 }
