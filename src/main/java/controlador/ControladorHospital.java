@@ -48,6 +48,9 @@ public class ControladorHospital {
             vista.cargarPacientesEgreso(
                     dao.listarPendientesEgreso()
             );
+            
+            vista.cargarPacientesVista(
+                    dao.listarPacientes());
 
         } catch (SQLException ex) {
 
@@ -155,13 +158,33 @@ public class ControladorHospital {
 
             dao.guardarRegistro(registro);
 
-            vista.mostrarMensaje(
-                    "Registro clínico guardado correctamente."
-            );
+boolean pacienteDadoDeAlta =
+        "ALTA".equalsIgnoreCase(
+                registro.getSalida()
+        );
 
-            vista.limpiarFormularioRegistro();
+vista.habilitarPestanaEgreso(
+        pacienteDadoDeAlta
+);
 
-            cargarDatos();
+if (pacienteDadoDeAlta) {
+
+    vista.mostrarMensaje(
+            "Registro clínico guardado correctamente."
+            + "El paciente fue dado de alta y ya puede registrarse su egreso."
+    );
+
+} else {
+
+    vista.mostrarMensaje(
+            "Registro clínico guardado correctamente."
+            + "El paciente permanece hospitalizado."
+    );
+}
+
+vista.limpiarFormularioRegistro();
+
+cargarDatos();
 
         } catch (IllegalArgumentException ex) {
 
@@ -302,4 +325,28 @@ public class ControladorHospital {
             );
         }
     }
+    
+    public void mostrarPacienteVista(
+        IngresoPaciente paciente
+) {
+
+    try {
+
+        Object[] datos =
+                dao.obtenerDetallePaciente(
+                        paciente.getIdIngreso()
+                );
+
+        vista.mostrarDetallePaciente(
+                datos
+        );
+
+    } catch (SQLException ex) {
+
+        vista.mostrarError(
+                "No se pudo cargar la información del paciente.\n"
+                + ex.getMessage()
+        );
+    }
+}
 }

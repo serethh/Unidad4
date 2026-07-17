@@ -17,6 +17,12 @@ import java.util.ArrayList;
 import java.util.List;
 import javax.swing.JOptionPane;
 
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import java.time.Period;
+
 public class Hospital extends javax.swing.JFrame {
 
     private List<Doctor> listaDoctores = new ArrayList<>();
@@ -26,10 +32,22 @@ public class Hospital extends javax.swing.JFrame {
 
     private List<IngresoPaciente> listaPacientesEgreso
             = new ArrayList<>();
+    
+    private List<IngresoPaciente> listaPacientesVista
+        = new ArrayList<>();
+    
+    private ControladorHospital controlador;
 
     public Hospital() {
         initComponents();
         setLocationRelativeTo(null);
+         configurarRestricciones();
+         configurarCalculoEdad();
+         configurarPestanaEgreso();
+         configurarTablaVista();
+         configurarSeleccionVista();
+
+        
 
     }
 
@@ -996,7 +1014,10 @@ public class Hospital extends javax.swing.JFrame {
     private javax.swing.JTextField txtPeso;
     // End of variables declaration//GEN-END:variables
 
+   
     public void setControlador(ControladorHospital controlador) {
+        
+        this.controlador=controlador;
 
         btnGuardar.addActionListener(
                 evento -> controlador.guardarIngreso()
@@ -1263,6 +1284,47 @@ public class Hospital extends javax.swing.JFrame {
             );
         }
     }
+    
+    public void cargarPacientesVista(
+        List<IngresoPaciente> pacientes
+    ) {
+
+    listaPacientesVista
+            = new ArrayList<>(pacientes);
+
+    cbBuscarEgreso1.removeAllItems();
+
+    cbBuscarEgreso1.addItem(
+            "Seleccione uno"
+    );
+
+    for (IngresoPaciente paciente
+            : listaPacientesVista) {
+
+        cbBuscarEgreso1.addItem(
+                paciente.getNombreCompleto()
+        );
+    }
+    }
+  
+
+    
+    public IngresoPaciente
+        obtenerPacienteVistaSeleccionado() {
+
+    int indice
+            = cbBuscarEgreso1.getSelectedIndex();
+
+    if (indice <= 0
+            || indice > listaPacientesVista.size()) {
+
+        return null;
+    }
+
+    return listaPacientesVista.get(
+            indice - 1
+    );
+}
 
     public Doctor obtenerDoctorSeleccionado() {
 
@@ -1381,4 +1443,430 @@ public class Hospital extends javax.swing.JFrame {
         txtObservacionesEgreso.setText("");
     }
 
+    
+    
+      private void configurarRestricciones() {
+
+   
+    ((AbstractDocument) txtNombre.getDocument())
+            .setDocumentFilter(new FiltroLetras(40));
+
+    ((AbstractDocument) txtPaterno.getDocument())
+            .setDocumentFilter(new FiltroLetras(40));
+
+    ((AbstractDocument) txtMaterno.getDocument())
+            .setDocumentFilter(new FiltroLetras(40));
+
+    
+    ((AbstractDocument) txtPeso.getDocument())
+            .setDocumentFilter(new FiltroDecimal(6));
+    
+      
+    ((AbstractDocument) txtAlergias.getDocument())
+            .setDocumentFilter(new FiltroTextoGeneral(200));
+
+    ((AbstractDocument) txtObservaciones.getDocument())
+            .setDocumentFilter(new FiltroTextoGeneral(500));
+
+    ((AbstractDocument) txtDiagnostico.getDocument())
+            .setDocumentFilter(new FiltroTextoGeneral(500));
+    
+    ((AbstractDocument) txtObservacionesEgreso.getDocument())
+            .setDocumentFilter(new FiltroTextoGeneral(500));
+
 }
+    
+    
+    private static class FiltroLetras extends DocumentFilter {
+
+    private final int limite;
+
+    public FiltroLetras(int limite) {
+        this.limite = limite;
+    }
+
+    @Override
+    public void insertString(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        if (texto == null) {
+            return;
+        }
+
+        reemplazarTexto(
+                fb,
+                offset,
+                0,
+                texto,
+                atributos
+        );
+    }
+
+    @Override
+    public void replace(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            int longitud,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        reemplazarTexto(
+                fb,
+                offset,
+                longitud,
+                texto,
+                atributos
+        );
+    }
+
+    private void reemplazarTexto(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            int longitud,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        String textoActual = fb.getDocument().getText(
+                0,
+                fb.getDocument().getLength()
+        );
+
+        String nuevoTexto
+                = textoActual.substring(0, offset)
+                + texto
+                + textoActual.substring(offset + longitud);
+
+        if (nuevoTexto.length() <= limite
+                && nuevoTexto.matches("[a-zA-ZÁÉÍÓÚáéíóúÑñÜü ]*")) {
+
+            fb.replace(
+                    offset,
+                    longitud,
+                    texto,
+                    atributos
+            );
+        }
+    }
+}
+   
+    private static class FiltroDecimal extends DocumentFilter {
+
+    private final int limite;
+
+    public FiltroDecimal(int limite) {
+        this.limite = limite;
+    }
+
+    @Override
+    public void insertString(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        if (texto == null) {
+            return;
+        }
+
+        reemplazarTexto(
+                fb,
+                offset,
+                0,
+                texto,
+                atributos
+        );
+    }
+
+    @Override
+    public void replace(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            int longitud,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        reemplazarTexto(
+                fb,
+                offset,
+                longitud,
+                texto,
+                atributos
+        );
+    }
+
+    private void reemplazarTexto(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            int longitud,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        String textoActual = fb.getDocument().getText(
+                0,
+                fb.getDocument().getLength()
+        );
+
+        String nuevoTexto
+                = textoActual.substring(0, offset)
+                + texto
+                + textoActual.substring(offset + longitud);
+
+        if (nuevoTexto.length() <= limite
+                && nuevoTexto.matches("\\d*(\\.\\d{0,2})?")) {
+
+            fb.replace(
+                    offset,
+                    longitud,
+                    texto,
+                    atributos
+            );
+        }
+    }
+}
+    
+    private static class FiltroTextoGeneral extends DocumentFilter {
+
+    private final int limite;
+
+    public FiltroTextoGeneral(int limite) {
+        this.limite = limite;
+    }
+
+    @Override
+    public void insertString(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        if (texto == null) {
+            return;
+        }
+
+        validarYReemplazar(
+                fb,
+                offset,
+                0,
+                texto,
+                atributos
+        );
+    }
+
+    @Override
+    public void replace(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            int longitud,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        if (texto == null) {
+            texto = "";
+        }
+
+        validarYReemplazar(
+                fb,
+                offset,
+                longitud,
+                texto,
+                atributos
+        );
+    }
+
+    private void validarYReemplazar(
+            DocumentFilter.FilterBypass fb,
+            int offset,
+            int longitud,
+            String texto,
+            AttributeSet atributos
+    ) throws BadLocationException {
+
+        String textoActual = fb.getDocument().getText(
+                0,
+                fb.getDocument().getLength()
+        );
+
+        String nuevoTexto
+                = textoActual.substring(0, offset)
+                + texto
+                + textoActual.substring(offset + longitud);
+
+        if (nuevoTexto.length() > limite) {
+            return;
+        }
+
+        if (nuevoTexto.matches(
+                "[a-zA-ZÁÉÍÓÚáéíóúÑñÜü0-9"
+                + " .,:;()%º/\\-+\\n\\r]*"
+        )) {
+
+            fb.replace(
+                    offset,
+                    longitud,
+                    texto,
+                    atributos
+            );
+        }
+    }
+}
+    
+    private void configurarCalculoEdad() {
+
+    txtEdad.setEditable(false);
+
+    fechaN.addPropertyChangeListener(
+            "date",
+            evento -> calcularEdadAutomaticamente()
+    );
+}
+    private void calcularEdadAutomaticamente() {
+
+    if (fechaN.getDate() == null) {
+        txtEdad.setText("");
+        return;
+    }
+
+    LocalDate fechaNacimiento =
+            fechaN.getDate()
+                    .toInstant()
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+
+    LocalDate fechaActual = LocalDate.now();
+
+    if (fechaNacimiento.isAfter(fechaActual)) {
+
+        txtEdad.setText("");
+
+        mostrarError(
+                "La fecha de nacimiento no puede ser futura."
+        );
+
+        fechaN.setDate(null);
+        return;
+    }
+
+    int edad = Period.between(
+            fechaNacimiento,
+            fechaActual
+    ).getYears();
+
+    txtEdad.setText(
+            String.valueOf(edad)
+    );
+}
+    
+    private void configurarPestanaEgreso() {
+
+    jTabbedPane1.setEnabledAt(
+            2,
+            false
+    );
+}
+    public void habilitarPestanaEgreso(
+        boolean habilitar
+) {
+
+    jTabbedPane1.setEnabledAt(
+            2,
+            habilitar
+    );
+
+    if (habilitar) {
+
+        jTabbedPane1.setSelectedIndex(2);
+    }
+}
+  
+    private void configurarTablaVista() {
+
+    contenedorHospital2.agregarColumna(
+            "Campo"
+    );
+
+    contenedorHospital2.agregarColumna(
+            "Información"
+    );
+
+    contenedorHospital2.permitirEdicion(false);
+}
+    
+    public void mostrarDetallePaciente(
+        Object[] datos
+) {
+
+    contenedorHospital2.limpiarTabla();
+
+    if (datos == null) {
+        return;
+    }
+
+    String[] campos = {
+        "Paciente",
+        "Género",
+        "Fecha de nacimiento",
+        "Edad",
+        "Peso",
+        "Fecha de ingreso",
+        "Hora de ingreso",
+        "Estado",
+        "Doctor",
+        "Especialidad",
+        "Alergias",
+        "Observaciones de registro",
+        "Diagnóstico",
+        "Salida",
+        "Fecha de egreso",
+        "Hora de egreso",
+        "Observaciones de egreso"
+    };
+
+    for (int i = 0; i < campos.length; i++) {
+
+        Object valor =
+                datos[i] == null
+                ? "Sin información"
+                : datos[i];
+
+        contenedorHospital2.agregarFila(
+                campos[i],
+                valor
+        );
+    }
+}
+
+    private void configurarSeleccionVista() {
+
+    cbBuscarEgreso1.addActionListener(
+            evento -> {
+
+                IngresoPaciente paciente =
+                        obtenerPacienteVistaSeleccionado();
+
+                if (paciente == null) {
+                    contenedorHospital2.limpiarTabla();
+                    return;
+                }
+
+                if (controlador != null) {
+
+                    controlador.mostrarPacienteVista(
+                            paciente
+                    );
+                }
+            }
+    );
+}
+}
+

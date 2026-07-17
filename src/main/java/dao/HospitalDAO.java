@@ -373,6 +373,81 @@ public class HospitalDAO {
 
         return pacientes;
     }
+            
+         public List<IngresoPaciente> listarPacientes()
+        throws SQLException {
+
+    String sql = """
+        SELECT
+            i.id_ingreso,
+            p.id_paciente,
+            p.nombre,
+            p.apellido_paterno,
+            p.apellido_materno
+        FROM clinica.ingreso i
+        INNER JOIN clinica.paciente p
+            ON p.id_paciente = i.id_paciente
+        ORDER BY
+            p.apellido_paterno,
+            p.apellido_materno,
+            p.nombre
+        """;
+
+    List<IngresoPaciente> pacientes =
+            new ArrayList<>();
+
+    try (
+        Connection conexion =
+                Conexion.getConexion();
+
+        PreparedStatement sentencia =
+                conexion.prepareStatement(sql);
+
+        ResultSet resultado =
+                sentencia.executeQuery()
+    ) {
+
+        while (resultado.next()) {
+
+            IngresoPaciente paciente =
+                    new IngresoPaciente();
+
+            paciente.setIdIngreso(
+                    resultado.getInt(
+                            "id_ingreso"
+                    )
+            );
+
+            paciente.setIdPaciente(
+                    resultado.getInt(
+                            "id_paciente"
+                    )
+            );
+
+            paciente.setNombre(
+                    resultado.getString(
+                            "nombre"
+                    )
+            );
+
+            paciente.setApellidoPaterno(
+                    resultado.getString(
+                            "apellido_paterno"
+                    )
+            );
+
+            paciente.setApellidoMaterno(
+                    resultado.getString(
+                            "apellido_materno"
+                    )
+            );
+
+            pacientes.add(paciente);
+        }
+    }
+
+    return pacientes;
+}
 
     public int guardarRegistro(
             Registro registro
@@ -696,8 +771,7 @@ public class HospitalDAO {
             ON e.id_ingreso = i.id_ingreso
         WHERE e.id_egreso IS NULL
           AND i.estado IN (
-              'ALTA',
-              'HOSPITALIZADO'
+              'ALTA'
           )
         ORDER BY
             i.fecha_ingreso,
@@ -758,5 +832,77 @@ public class HospitalDAO {
     }
 
     return pacientes;
+}
+        
+        public Object[] obtenerDetallePaciente(
+        int idIngreso
+) throws SQLException {
+
+    String sql = """
+        SELECT
+            paciente,
+            genero,
+            fecha_nacimiento,
+            edad,
+            peso,
+            fecha_ingreso,
+            hora_ingreso,
+            estado,
+            doctor,
+            especialidad,
+            alergias,
+            observaciones_registro,
+            diagnostico,
+            salida,
+            fecha_egreso,
+            hora_egreso,
+            observaciones_egreso
+        FROM clinica.vista_pacientes
+        WHERE id_ingreso = ?
+        """;
+
+    try (
+        Connection conexion =
+                Conexion.getConexion();
+
+        PreparedStatement sentencia =
+                conexion.prepareStatement(sql)
+    ) {
+
+        sentencia.setInt(
+                1,
+                idIngreso
+        );
+
+        try (
+            ResultSet resultado =
+                    sentencia.executeQuery()
+        ) {
+
+            if (!resultado.next()) {
+                return null;
+            }
+
+            return new Object[]{
+                resultado.getString("paciente"),
+                resultado.getString("genero"),
+                resultado.getDate("fecha_nacimiento"),
+                resultado.getInt("edad"),
+                resultado.getBigDecimal("peso"),
+                resultado.getDate("fecha_ingreso"),
+                resultado.getTime("hora_ingreso"),
+                resultado.getString("estado"),
+                resultado.getString("doctor"),
+                resultado.getString("especialidad"),
+                resultado.getString("alergias"),
+                resultado.getString("observaciones_registro"),
+                resultado.getString("diagnostico"),
+                resultado.getString("salida"),
+                resultado.getDate("fecha_egreso"),
+                resultado.getTime("hora_egreso"),
+                resultado.getString("observaciones_egreso")
+            };
+        }
+    }
 }
 }
