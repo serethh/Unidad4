@@ -34,15 +34,10 @@ public class DoctorDAO {
         List<Doctor> doctores = new ArrayList<>();
 
         try (
-            Connection conexion =
-                    Conexion.getConexion();
-
-            PreparedStatement sentencia =
-                    conexion.prepareStatement(sql);
-
-            ResultSet resultado =
-                    sentencia.executeQuery()
-        ) {
+                Connection conexion
+                = Conexion.getConexion(); PreparedStatement sentencia
+                = conexion.prepareStatement(sql); ResultSet resultado
+                = sentencia.executeQuery()) {
             while (resultado.next()) {
 
                 Doctor doctor = new Doctor();

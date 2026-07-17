@@ -17,6 +17,9 @@ import java.sql.Time;
 import java.util.ArrayList;
 import java.util.List;
 
+import modelo.Receta;
+import modelo.DetalleReceta;
+
 public class HospitalDAO {
 
     public int guardarPacienteConIngreso(
@@ -299,80 +302,88 @@ public class HospitalDAO {
     
     }
  
-    public List<IngresoPaciente>
-            listarPendientesRegistro()
-            throws SQLException {
+   public List<IngresoPaciente> listarPendientesRegistro()
+        throws SQLException {
 
-        String sql = """
+    List<IngresoPaciente> pacientes =
+            new ArrayList<>();
+
+    String sql = """
         SELECT
             i.id_ingreso,
             p.id_paciente,
             p.nombre,
             p.apellido_paterno,
-            p.apellido_materno
+            p.apellido_materno,
+            i.estado
         FROM clinica.ingreso i
         INNER JOIN clinica.paciente p
             ON p.id_paciente = i.id_paciente
-        LEFT JOIN clinica.registro r
-            ON r.id_ingreso = i.id_ingreso
-        WHERE r.id_registro IS NULL
-          AND i.estado = 'INGRESADO'
+        LEFT JOIN clinica.egreso e
+            ON e.id_ingreso = i.id_ingreso
+        WHERE i.estado IN (
+            'INGRESADO',
+            'HOSPITALIZADO'
+        )
+        AND e.id_egreso IS NULL
         ORDER BY
+            p.nombre,
             p.apellido_paterno,
-            p.apellido_materno,
-            p.nombre
+            p.apellido_materno
         """;
 
-        List<IngresoPaciente> pacientes
-                = new ArrayList<>();
+    try (
+        Connection conexion =
+                Conexion.getConexion();
 
-        try (
-                Connection conexion
-                = Conexion.getConexion(); PreparedStatement sentencia
-                = conexion.prepareStatement(sql); ResultSet resultado
-                = sentencia.executeQuery()) {
+        PreparedStatement sentencia =
+                conexion.prepareStatement(sql);
 
-            while (resultado.next()) {
+        ResultSet resultado =
+                sentencia.executeQuery()
+    ) {
 
-                IngresoPaciente paciente
-                        = new IngresoPaciente();
+        while (resultado.next()) {
 
-                paciente.setIdIngreso(
-                        resultado.getInt(
-                                "id_ingreso"
-                        )
-                );
+            IngresoPaciente paciente =
+                    new IngresoPaciente();
 
-                paciente.setIdPaciente(
-                        resultado.getInt(
-                                "id_paciente"
-                        )
-                );
+            paciente.setIdIngreso(
+                    resultado.getInt(
+                            "id_ingreso"
+                    )
+            );
 
-                paciente.setNombre(
-                        resultado.getString(
-                                "nombre"
-                        )
-                );
+            paciente.setIdPaciente(
+                    resultado.getInt(
+                            "id_paciente"
+                    )
+            );
 
-                paciente.setApellidoPaterno(
-                        resultado.getString(
-                                "apellido_paterno"
-                        )
-                );
+            paciente.setNombre(
+                    resultado.getString(
+                            "nombre"
+                    )
+            );
 
-                paciente.setApellidoMaterno(
-                        resultado.getString(
-                                "apellido_materno"
-                        )
-                );
+            paciente.setApellidoPaterno(
+                    resultado.getString(
+                            "apellido_paterno"
+                    )
+            );
 
-                pacientes.add(paciente);
-            }
+            paciente.setApellidoMaterno(
+                    resultado.getString(
+                            "apellido_materno"
+                    )
+            );
+
+            pacientes.add(paciente);
         }
-
-        return pacientes;
     }
+
+    return pacientes;
+}
             
          public List<IngresoPaciente> listarPacientes()
         throws SQLException {
@@ -753,9 +764,11 @@ public class HospitalDAO {
             }
         }
     }
-    public List<IngresoPaciente>
-        listarPendientesEgreso()
+public List<IngresoPaciente> listarPendientesEgreso()
         throws SQLException {
+
+    List<IngresoPaciente> pacientes =
+            new ArrayList<>();
 
     String sql = """
         SELECT
@@ -769,17 +782,13 @@ public class HospitalDAO {
             ON p.id_paciente = i.id_paciente
         LEFT JOIN clinica.egreso e
             ON e.id_ingreso = i.id_ingreso
-        WHERE e.id_egreso IS NULL
-          AND i.estado IN (
-              'ALTA'
-          )
+        WHERE UPPER(TRIM(i.estado)) = 'ALTA'
+          AND e.id_egreso IS NULL
         ORDER BY
-            i.fecha_ingreso,
-            i.hora_ingreso
+            p.nombre,
+            p.apellido_paterno,
+            p.apellido_materno
         """;
-
-    List<IngresoPaciente> pacientes =
-            new ArrayList<>();
 
     try (
         Connection conexion =
@@ -971,5 +980,321 @@ public class HospitalDAO {
 
     return pacientes;
 }
-        
+       
+        public int guardarRegistroConReceta(
+        Registro registro,
+        Receta receta
+) throws SQLException {
+
+    String sqlRelacion = """
+        INSERT INTO clinica.paciente_doctor (
+            id_paciente,
+            id_doctor
+        )
+        VALUES (?, ?)
+        ON CONFLICT (id_paciente, id_doctor)
+        DO UPDATE SET activo = TRUE
+        """;
+
+String sqlRegistro = """
+    INSERT INTO clinica.registro (
+        id_ingreso,
+        id_paciente,
+        id_doctor,
+        alergias,
+        observaciones,
+        diagnostico,
+        salida
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+
+    ON CONFLICT (id_ingreso)
+    DO UPDATE SET
+        id_doctor = EXCLUDED.id_doctor,
+        alergias = EXCLUDED.alergias,
+        observaciones = EXCLUDED.observaciones,
+        diagnostico = EXCLUDED.diagnostico,
+        salida = EXCLUDED.salida
+
+    RETURNING id_registro
+    """;
+
+    String sqlReceta = """
+    INSERT INTO clinica.receta (
+        id_registro,
+        fecha_receta,
+        indicaciones_generales
+    )
+    VALUES (?, ?, ?)
+
+    ON CONFLICT (id_registro)
+    DO UPDATE SET
+        fecha_receta = EXCLUDED.fecha_receta,
+        indicaciones_generales =
+                EXCLUDED.indicaciones_generales
+
+    RETURNING id_receta
+    """;
+
+    String sqlDetalle = """
+        INSERT INTO clinica.detalle_receta (
+            id_receta,
+            medicamento,
+            dosis,
+            frecuencia,
+            duracion,
+            via_administracion,
+            indicaciones
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
+
+
+    Connection conexion = null;
+
+    try {
+
+        conexion = Conexion.getConexion();
+
+        conexion.setAutoCommit(false);
+
+        conexion.setTransactionIsolation(
+                Connection.TRANSACTION_READ_COMMITTED
+        );
+
+        try (
+            PreparedStatement psRelacion =
+                    conexion.prepareStatement(
+                            sqlRelacion
+                    )
+        ) {
+
+            psRelacion.setInt(
+                    1,
+                    registro.getIdPaciente()
+            );
+
+            psRelacion.setInt(
+                    2,
+                    registro.getIdDoctor()
+            );
+
+            psRelacion.executeUpdate();
+        }
+
+        int idRegistro;
+
+        try (
+            PreparedStatement psRegistro =
+                    conexion.prepareStatement(
+                            sqlRegistro
+                    )
+        ) {
+
+            psRegistro.setInt(
+                    1,
+                    registro.getIdIngreso()
+            );
+
+            psRegistro.setInt(
+                    2,
+                    registro.getIdPaciente()
+            );
+
+            psRegistro.setInt(
+                    3,
+                    registro.getIdDoctor()
+            );
+
+            psRegistro.setString(
+                    4,
+                    registro.getAlergias()
+            );
+
+            psRegistro.setString(
+                    5,
+                    registro.getObservaciones()
+            );
+
+            psRegistro.setString(
+                    6,
+                    registro.getDiagnostico()
+            );
+
+            psRegistro.setString(
+                    7,
+                    registro.getSalida()
+            );
+
+            try (
+                ResultSet resultado =
+                        psRegistro.executeQuery()
+            ) {
+
+                if (!resultado.next()) {
+                    throw new SQLException(
+                            "No se generó el ID del registro."
+                    );
+                }
+
+                idRegistro =
+                        resultado.getInt(
+                                "id_registro"
+                        );
+
+                registro.setIdRegistro(
+                        idRegistro
+                );
+            }
+        }
+
+        if (receta != null) {
+
+            receta.setIdRegistro(idRegistro);
+
+            int idReceta;
+
+            try (
+                PreparedStatement psReceta =
+                        conexion.prepareStatement(
+                                sqlReceta
+                        )
+            ) {
+
+                psReceta.setInt(
+                        1,
+                        idRegistro
+                );
+
+                psReceta.setDate(
+                        2,
+                        java.sql.Date.valueOf(
+                                receta.getFechaReceta()
+                        )
+                );
+
+                psReceta.setString(
+                        3,
+                        receta.getIndicacionesGenerales()
+                );
+
+                try (
+                    ResultSet resultado =
+                            psReceta.executeQuery()
+                ) {
+
+                    if (!resultado.next()) {
+                        throw new SQLException(
+                                "No se generó el ID de la receta."
+                        );
+                    }
+
+                    idReceta =
+                            resultado.getInt(
+                                    "id_receta"
+                            );
+
+                    receta.setIdReceta(idReceta);
+                }
+            }
+
+            try (
+                PreparedStatement psDetalle =
+                        conexion.prepareStatement(
+                                sqlDetalle
+                        )
+            ) {
+
+                for (
+                    DetalleReceta detalle
+                    : receta.getDetalles()
+                ) {
+
+                    detalle.setIdReceta(idReceta);
+
+                    psDetalle.setInt(
+                            1,
+                            idReceta
+                    );
+
+                    psDetalle.setString(
+                            2,
+                            detalle.getMedicamento()
+                    );
+
+                    psDetalle.setString(
+                            3,
+                            detalle.getDosis()
+                    );
+
+                    psDetalle.setString(
+                            4,
+                            detalle.getFrecuencia()
+                    );
+
+                    psDetalle.setString(
+                            5,
+                            detalle.getDuracion()
+                    );
+
+                    psDetalle.setString(
+                            6,
+                            detalle.getViaAdministracion()
+                    );
+
+                    psDetalle.setString(
+                            7,
+                            detalle.getIndicaciones()
+                    );
+
+                    psDetalle.addBatch();
+                }
+
+                psDetalle.executeBatch();
+            }
+        }
+
+        conexion.commit();
+
+        return idRegistro;
+
+    } catch (SQLException ex) {
+
+        if (conexion != null) {
+            try {
+                conexion.rollback();
+            } catch (SQLException rollbackEx) {
+                ex.addSuppressed(rollbackEx);
+            }
+        }
+
+        throw new SQLException(
+                "No se guardó el registro ni la receta. "
+                + "La transacción fue revertida. "
+                + ex.getMessage(),
+                ex
+        );
+
+    } finally {
+
+        if (conexion != null) {
+
+            try {
+                conexion.setAutoCommit(true);
+            } catch (SQLException ex) {
+                System.err.println(
+                        ex.getMessage()
+                );
+            }
+
+            try {
+                conexion.close();
+            } catch (SQLException ex) {
+                System.err.println(
+                        ex.getMessage()
+                );
+            }
+        }
+    }
+}
 }

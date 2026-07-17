@@ -15,6 +15,7 @@
 
     <dependencies>
 
+        
         <dependency>
             <groupId>org.netbeans.external</groupId>
             <artifactId>AbsoluteLayout</artifactId>
@@ -32,6 +33,12 @@
             <artifactId>postgresql</artifactId>
             <version>42.7.11</version>
         </dependency>
+        
+        <dependency>
+        <groupId>org.apache.pdfbox</groupId>
+        <artifactId>pdfbox</artifactId>
+        <version>3.0.8</version>
+        </dependency> 
 
     </dependencies>
 

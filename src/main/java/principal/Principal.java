@@ -36,6 +36,8 @@ public class Principal {
             HospitalDAO dao =
                     new HospitalDAO();
 
+         
+            
             ControladorHospital controlador =
                     new ControladorHospital(
                             vista,

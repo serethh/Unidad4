@@ -23,6 +23,15 @@ import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import java.time.Period;
 
+import modelo.Receta;
+import modelo.DetalleReceta;
+
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
 public class Hospital extends javax.swing.JFrame {
 
     private List<Doctor> listaDoctores = new ArrayList<>();
@@ -499,6 +508,11 @@ public class Hospital extends javax.swing.JFrame {
         btnGuardarRegistro.setFont(new java.awt.Font("Swis721 BT", 3, 14)); // NOI18N
         btnGuardarRegistro.setForeground(new java.awt.Color(255, 255, 255));
         btnGuardarRegistro.setText("Guardar");
+        btnGuardarRegistro.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGuardarRegistroActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 4;
         gridBagConstraints.gridy = 13;
@@ -909,6 +923,10 @@ public class Hospital extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
+    private void btnGuardarRegistroActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarRegistroActionPerformed
+   controlador.guardarRegistro();
+    }//GEN-LAST:event_btnGuardarRegistroActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1026,10 +1044,6 @@ public class Hospital extends javax.swing.JFrame {
 
         btnGuardar.addActionListener(
                 evento -> controlador.guardarIngreso()
-        );
-
-        btnGuardarRegistro.addActionListener(
-                evento -> controlador.guardarRegistro()
         );
 
         btnGuardarEgreso.addActionListener(
@@ -1151,90 +1165,34 @@ public class Hospital extends javax.swing.JFrame {
     return ingreso;
     }
 
-    public Registro obtenerRegistroFormulario() {
 
-        Registro registro = new Registro();
+public Registro obtenerRegistroFormulario() {
 
-        registro.setAlergias(
-                txtAlergias.getText().trim()
-        );
+    Registro registro = new Registro();
 
-        registro.setObservaciones(
-                txtObservaciones.getText().trim()
-        );
+    registro.setAlergias(
+            txtAlergias.getText().trim()
+    );
 
-        registro.setDiagnostico(
-                txtDiagnostico.getText().trim()
-        );
+    registro.setObservaciones(
+            txtObservaciones.getText().trim()
+    );
 
-        if (rbAlta.isSelected()) {
+    registro.setDiagnostico(
+            txtDiagnostico.getText().trim()
+    );
 
-            registro.setSalida("ALTA");
+    if (rbAlta.isSelected()) {
 
-        } else if (rbHospitalizacion.isSelected()) {
+        registro.setSalida("ALTA");
 
-            registro.setSalida("HOSPITALIZACION");
-        }
+    } else if (rbHospitalizacion.isSelected()) {
 
-        return registro;
+        registro.setSalida("HOSPITALIZACION");
     }
 
-    public Egreso obtenerEgresoFormulario() {
-
-        Egreso egreso = new Egreso();
-
-    LocalDate fecha = null;
-
-    if (fechaEgreso.getDate() != null) {
-
-        fecha = fechaEgreso.getDate()
-                .toInstant()
-                .atZone(
-                        ZoneId.systemDefault()
-                )
-                .toLocalDate();
-
-        if (fecha.isAfter(LocalDate.now())) {
-
-            throw new IllegalArgumentException(
-                    "La fecha de egreso no puede ser posterior a la fecha actual."
-            );
-        }
-
-        egreso.setFechaEgreso(fecha);
-    }
-
-    String horaTexto =
-            txtHoraEgreso.getText().trim();
-
-    if (!horaTexto.isBlank()) {
-
-        LocalTime hora =
-                convertirHora(
-                        horaTexto,
-                        "La hora de egreso"
-                );
-
-        if (fecha != null
-                && fecha.equals(LocalDate.now())
-                && hora.isAfter(LocalTime.now())) {
-
-            throw new IllegalArgumentException(
-                    "La hora de egreso no puede ser posterior a la hora actual."
-            );
-        }
-
-        egreso.setHoraEgreso(hora);
-    }
-
-        egreso.setObservaciones(
-                txtObservacionesEgreso
-                        .getText()
-                        .trim()
-        );
-
-        return egreso;
-    }
+    return registro;
+}
 
     private LocalTime convertirHora(
             String texto,
@@ -2016,5 +1974,331 @@ private void filtrarTablaPorPaciente() {
     mostrarFilasTabla(resultado);
 }
 
-    
+public Receta solicitarReceta() {
+
+    JOptionPane.showMessageDialog(
+            this,
+            "Se va a generar la receta médica.",
+            "Receta médica",
+            JOptionPane.INFORMATION_MESSAGE
+    );
+
+    JTextField txtMedicamento =
+            new JTextField(25);
+
+    JTextField txtDosis =
+            new JTextField(25);
+
+    JTextField txtFrecuencia =
+            new JTextField(25);
+
+    JTextField txtDuracion =
+            new JTextField(25);
+
+    JComboBox<String> cbVia =
+            new JComboBox<>(
+                    new String[]{
+                        "Oral",
+                        "Intravenosa",
+                        "Intramuscular",
+                        "Tópica",
+                        "Subcutánea",
+                        "Otra"
+                    }
+            );
+
+    JTextArea txtIndicaciones =
+            new JTextArea(4, 25);
+
+    txtIndicaciones.setLineWrap(true);
+    txtIndicaciones.setWrapStyleWord(true);
+
+    JTextArea txtIndicacionesGenerales =
+            new JTextArea(3, 25);
+
+    txtIndicacionesGenerales.setLineWrap(true);
+    txtIndicacionesGenerales.setWrapStyleWord(true);
+
+    JPanel panel =
+            new JPanel(
+                    new java.awt.GridBagLayout()
+            );
+
+    java.awt.GridBagConstraints gbc =
+            new java.awt.GridBagConstraints();
+
+    gbc.insets =
+            new java.awt.Insets(
+                    5,
+                    5,
+                    5,
+                    5
+            );
+
+    gbc.fill =
+            java.awt.GridBagConstraints.HORIZONTAL;
+
+    gbc.gridx = 0;
+    gbc.gridy = 0;
+
+    panel.add(
+            new JLabel("Medicamento:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            txtMedicamento,
+            gbc
+    );
+
+    gbc.gridx = 0;
+    gbc.gridy++;
+
+    panel.add(
+            new JLabel("Dosis:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            txtDosis,
+            gbc
+    );
+
+    gbc.gridx = 0;
+    gbc.gridy++;
+
+    panel.add(
+            new JLabel("Frecuencia:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            txtFrecuencia,
+            gbc
+    );
+
+    gbc.gridx = 0;
+    gbc.gridy++;
+
+    panel.add(
+            new JLabel("Duración:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            txtDuracion,
+            gbc
+    );
+
+    gbc.gridx = 0;
+    gbc.gridy++;
+
+    panel.add(
+            new JLabel("Vía de administración:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            cbVia,
+            gbc
+    );
+
+    gbc.gridx = 0;
+    gbc.gridy++;
+
+    panel.add(
+            new JLabel("Indicaciones:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            new JScrollPane(
+                    txtIndicaciones
+            ),
+            gbc
+    );
+
+    gbc.gridx = 0;
+    gbc.gridy++;
+
+    panel.add(
+            new JLabel("Indicaciones generales:"),
+            gbc
+    );
+
+    gbc.gridx = 1;
+
+    panel.add(
+            new JScrollPane(
+                    txtIndicacionesGenerales
+            ),
+            gbc
+    );
+
+    int resultado =
+            JOptionPane.showConfirmDialog(
+                    this,
+                    panel,
+                    "Datos de la receta médica",
+                    JOptionPane.OK_CANCEL_OPTION,
+                    JOptionPane.PLAIN_MESSAGE
+            );
+
+    if (resultado != JOptionPane.OK_OPTION) {
+
+        throw new IllegalArgumentException(
+                "La generación de la receta fue cancelada."
+        );
+    }
+
+    String medicamento =
+            txtMedicamento
+                    .getText()
+                    .trim();
+
+    String dosis =
+            txtDosis
+                    .getText()
+                    .trim();
+
+    String frecuencia =
+            txtFrecuencia
+                    .getText()
+                    .trim();
+
+    if (medicamento.isBlank()) {
+
+        throw new IllegalArgumentException(
+                "Escriba el nombre del medicamento."
+        );
+    }
+
+    if (dosis.isBlank()) {
+
+        throw new IllegalArgumentException(
+                "Escriba la dosis."
+        );
+    }
+
+    if (frecuencia.isBlank()) {
+
+        throw new IllegalArgumentException(
+                "Escriba la frecuencia."
+        );
+    }
+
+    DetalleReceta detalle =
+            new DetalleReceta();
+
+    detalle.setMedicamento(
+            medicamento
+    );
+
+    detalle.setDosis(
+            dosis
+    );
+
+    detalle.setFrecuencia(
+            frecuencia
+    );
+
+    detalle.setDuracion(
+            txtDuracion
+                    .getText()
+                    .trim()
+    );
+
+    detalle.setViaAdministracion(
+            String.valueOf(
+                    cbVia.getSelectedItem()
+            )
+    );
+
+    detalle.setIndicaciones(
+            txtIndicaciones
+                    .getText()
+                    .trim()
+    );
+
+    Receta receta =
+            new Receta();
+
+    receta.setIndicacionesGenerales(
+            txtIndicacionesGenerales
+                    .getText()
+                    .trim()
+    );
+
+    receta.agregarDetalle(
+            detalle
+    );
+
+    return receta;
+}
+    public Egreso obtenerEgresoFormulario() {
+
+    Egreso egreso = new Egreso();
+
+    LocalDate fecha = null;
+
+    if (fechaEgreso.getDate() != null) {
+
+        fecha = fechaEgreso.getDate()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate();
+
+        if (fecha.isAfter(LocalDate.now())) {
+
+            throw new IllegalArgumentException(
+                    "La fecha de egreso no puede ser posterior a la fecha actual."
+            );
+        }
+
+        egreso.setFechaEgreso(fecha);
+    }
+
+    String horaTexto =
+            txtHoraEgreso.getText().trim();
+
+    if (!horaTexto.isBlank()) {
+
+        LocalTime hora =
+                convertirHora(
+                        horaTexto,
+                        "La hora de egreso"
+                );
+
+        if (fecha != null
+                && fecha.equals(LocalDate.now())
+                && hora.isAfter(LocalTime.now())) {
+
+            throw new IllegalArgumentException(
+                    "La hora de egreso no puede ser posterior a la hora actual."
+            );
+        }
+
+        egreso.setHoraEgreso(hora);
+    }
+
+    egreso.setObservaciones(
+            txtObservacionesEgreso
+                    .getText()
+                    .trim()
+    );
+
+    return egreso;
+}
 }
