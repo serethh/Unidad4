@@ -1,6 +1,9 @@
 package Interfaz;
 
 import controlador.ControladorHospital;
+import dao.DoctorDAO;
+import dao.HospitalDAO;
+import dao.RegistroDAO;
 import modelo.Doctor;
 import modelo.Egreso;
 import modelo.Ingreso;
@@ -9,6 +12,7 @@ import modelo.Paciente;
 import modelo.Registro;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
@@ -22,6 +26,7 @@ import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
 import java.time.Period;
+import java.time.format.DateTimeFormatter;
 
 import modelo.Receta;
 import modelo.DetalleReceta;
@@ -50,6 +55,7 @@ public class Hospital extends javax.swing.JFrame {
         
     private ControladorHospital  controlador;
     
+    private int idRegistroActual = 0;
 
 
     public Hospital() {
@@ -60,11 +66,47 @@ public class Hospital extends javax.swing.JFrame {
          configurarPestanaEgreso();
          configurarTablaGeneral();
          configurarSeleccionVista();
+         configurarSeleccionRegistro();
+         configurarSeleccionEgreso(); 
 
+        txtHoraIngreso.setEditable(false);
+        javax.swing.Timer timerHoraIngreso = new javax.swing.Timer(1000, e -> {
+            txtHoraIngreso.setText(LocalTime.now(ZoneId.of("America/Mexico_City")).format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        });
+        timerHoraIngreso.start();
         
+        fechaIngreso.setDate(java.sql.Date.valueOf(LocalDate.now(ZoneId.of("America/Mexico_City"))));
+                
+        txtHoraEgreso.setEditable(false);
+        javax.swing.Timer timerHoraEgreso = new javax.swing.Timer(1000, e -> {
+            txtHoraEgreso.setText(LocalTime.now(ZoneId.of("America/Mexico_City")).format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        });
+        timerHoraEgreso.start();
+        
+        fechaEgreso.setDate(java.sql.Date.valueOf(LocalDate.now(ZoneId.of("America/Mexico_City"))));
+       /* try {
+            DoctorDAO dao = new DoctorDAO();
+            cargarDoctores(dao.listarActivos());
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }*/
+       
+        try {
+            DoctorDAO doctorDAO = new DoctorDAO();
+            cargarDoctores(doctorDAO.listarActivos());
 
+            HospitalDAO hospitalDAO = new HospitalDAO();
+            
+            cargarPacientesRegistro(hospitalDAO.listarPendientesRegistro());
+            cargarPacientesEgreso(hospitalDAO.listarPendientesEgreso());
+            cargarTablaGeneral(hospitalDAO.listarVistaGeneral());
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
+    
 
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -345,6 +387,11 @@ public class Hospital extends javax.swing.JFrame {
 
         fechaIngreso.setBackground(new java.awt.Color(234, 244, 255));
         fechaIngreso.setForeground(new java.awt.Color(15, 76, 129));
+        fechaIngreso.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                fechaIngresoPropertyChange(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 25;
         gridBagConstraints.gridy = 12;
@@ -357,6 +404,11 @@ public class Hospital extends javax.swing.JFrame {
         txtHoraIngreso.setBackground(new java.awt.Color(250, 252, 255));
         txtHoraIngreso.setFont(new java.awt.Font("Swis721 BT", 0, 14)); // NOI18N
         txtHoraIngreso.setForeground(new java.awt.Color(30, 58, 95));
+        txtHoraIngreso.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtHoraIngresoActionPerformed(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 25;
         gridBagConstraints.gridy = 13;
@@ -743,6 +795,11 @@ public class Hospital extends javax.swing.JFrame {
 
         fechaEgreso.setBackground(new java.awt.Color(234, 244, 255));
         fechaEgreso.setForeground(new java.awt.Color(15, 76, 129));
+        fechaEgreso.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                fechaEgresoPropertyChange(evt);
+            }
+        });
         gridBagConstraints = new java.awt.GridBagConstraints();
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 5;
@@ -924,9 +981,159 @@ public class Hospital extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarRegistroActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarRegistroActionPerformed
-   controlador.guardarRegistro();
+       controlador.guardarRegistro();
+       
     }//GEN-LAST:event_btnGuardarRegistroActionPerformed
 
+    private void txtHoraIngresoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtHoraIngresoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtHoraIngresoActionPerformed
+
+    private void configurarSeleccionEgreso() {
+    cbBuscarEgreso.addActionListener(evento -> cargarDiagnosticoEgresoSeleccionado());
+}
+
+private void cargarDiagnosticoEgresoSeleccionado() {
+
+    IngresoPaciente seleccionado = obtenerPacienteEgresoSeleccionado();
+
+    if (seleccionado == null) {
+        txtObservacionesEgreso.setText("");
+        return;
+    }
+
+    try {
+        RegistroDAO registroDAO = new RegistroDAO();
+        Registro registro = registroDAO.buscarPorIdIngreso(seleccionado.getIdIngreso());
+
+        txtObservacionesEgreso.setText(
+                registro != null ? registro.getDiagnostico() : ""
+        );
+
+    } catch (SQLException ex) {
+        mostrarError("No se pudo cargar el diagnóstico del paciente.");
+        ex.printStackTrace();
+    }
+}
+    
+    
+    private void fechaIngresoPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_fechaIngresoPropertyChange
+        // TODO add your handling code here:
+         if ("date".equals(evt.getPropertyName()) && fechaIngreso.getDate() != null) {
+            LocalDate fecha = fechaIngreso.getDate()
+                    .toInstant()
+                    .atZone(ZoneId.of("America/Mexico_City"))
+                    .toLocalDate();
+
+            LocalDate hoy = LocalDate.now(ZoneId.of("America/Mexico_City"));
+
+            if (!fecha.equals(hoy)) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Solo se puede seleccionar la fecha actual.",
+                        "Fecha inválida",
+                        JOptionPane.WARNING_MESSAGE);
+
+                fechaIngreso.setDate(java.sql.Date.valueOf(hoy));
+            }
+        }
+    }//GEN-LAST:event_fechaIngresoPropertyChange
+
+    private void fechaEgresoPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_fechaEgresoPropertyChange
+        // TODO add your handling code here:
+        if ("date".equals(evt.getPropertyName()) && fechaEgreso.getDate() != null) {
+            LocalDate fecha = fechaEgreso.getDate()
+                    .toInstant()
+                    .atZone(ZoneId.of("America/Mexico_City"))
+                    .toLocalDate();
+
+            LocalDate hoy = LocalDate.now(ZoneId.of("America/Mexico_City"));
+
+            if (!fecha.equals(hoy)) {
+
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Solo se puede seleccionar la fecha actual.",
+                        "Fecha inválida",
+                        JOptionPane.WARNING_MESSAGE);
+
+                fechaEgreso.setDate(java.sql.Date.valueOf(hoy));
+            }
+        }
+    }//GEN-LAST:event_fechaEgresoPropertyChange
+
+    public void habilitarPestanaEgreso(boolean habilitar) {
+    jTabbedPane1.setEnabledAt(2, habilitar);
+}
+
+public void mostrarPestanaEgreso() {
+    jTabbedPane1.setEnabledAt(2, true);
+    jTabbedPane1.setSelectedIndex(2);
+}
+    
+    private void configurarSeleccionRegistro() {
+    cbBuscar.addActionListener(evento -> cargarDatosRegistroSeleccionado());
+}
+
+private void cargarDatosRegistroSeleccionado() {
+
+    IngresoPaciente seleccionado = obtenerPacienteRegistroSeleccionado();
+
+    if (seleccionado == null) {
+        idRegistroActual = 0;
+        limpiarCamposRegistro();
+        return;
+    }
+
+    try {
+        RegistroDAO registroDAO = new RegistroDAO();
+        Registro registro = registroDAO.buscarPorIdIngreso(seleccionado.getIdIngreso());
+
+        if (registro != null) {
+            idRegistroActual = registro.getIdRegistro();
+
+            txtAlergias.setText(registro.getAlergias());
+            txtObservaciones.setText(registro.getObservaciones());
+            txtDiagnostico.setText(registro.getDiagnostico());
+
+            buttonGroup1.clearSelection();
+            if ("ALTA".equalsIgnoreCase(registro.getSalida())) {
+                rbAlta.setSelected(true);
+            } else if ("HOSPITALIZACION".equalsIgnoreCase(registro.getSalida())) {
+                rbHospitalizacion.setSelected(true);
+            }
+        } else {
+            idRegistroActual = 0;
+            limpiarCamposRegistro();
+        }
+
+    } catch (SQLException ex) {
+        mostrarError("No se pudo cargar el registro del paciente.");
+        ex.printStackTrace();
+    }
+}
+
+public void limpiarFormularioRegistro() {
+    idRegistroActual = 0;
+
+    cbBuscarDoctor.setSelectedIndex(0);
+    cbBuscar.setSelectedIndex(0);
+
+    txtAlergias.setText("");
+    txtObservaciones.setText("");
+    txtDiagnostico.setText("");
+
+    buttonGroup1.clearSelection();
+}
+
+private void limpiarCamposRegistro() {
+    txtAlergias.setText("");
+    txtObservaciones.setText("");
+    txtDiagnostico.setText("");
+    buttonGroup1.clearSelection();
+}
+    
     /**
      * @param args the command line arguments
      */
@@ -953,13 +1160,31 @@ public class Hospital extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(Hospital.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
-
-        /* Create and display the form */
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new Hospital().setVisible(true);
+try {
+        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+            if ("Nimbus".equals(info.getName())) {
+                javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                break;
             }
-        });
+        }
+    } catch (ClassNotFoundException ex) {
+        java.util.logging.Logger.getLogger(Hospital.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+    } catch (InstantiationException ex) {
+        java.util.logging.Logger.getLogger(Hospital.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+    } catch (IllegalAccessException ex) {
+        java.util.logging.Logger.getLogger(Hospital.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+    } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+        java.util.logging.Logger.getLogger(Hospital.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+    }
+
+    /* Create and display the form */
+    java.awt.EventQueue.invokeLater(() -> {
+        Hospital vista = new Hospital();
+        dao.HospitalDAO daoHospital = new dao.HospitalDAO();
+        controlador.ControladorHospital ctrl =
+                new controlador.ControladorHospital(vista, daoHospital);
+        ctrl.iniciar();
+    });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -1095,76 +1320,53 @@ public class Hospital extends javax.swing.JFrame {
         return paciente;
     }
 
-    public Ingreso obtenerIngresoFormulario() {
+   public Ingreso obtenerIngresoFormulario() {
 
-        Ingreso ingreso = new Ingreso();
+    Ingreso ingreso = new Ingreso();
 
-        String pesoTexto
-                = txtPeso.getText().trim();
+    String pesoTexto = txtPeso.getText().trim();
 
-        if (!pesoTexto.isBlank()) {
+    if (!pesoTexto.isBlank()) {
 
-            try {
+        try {
 
-                ingreso.setPeso(
-                        new BigDecimal(pesoTexto)
-                );
+            BigDecimal peso = new BigDecimal(pesoTexto);
 
-            } catch (NumberFormatException ex) {
+            if (peso.compareTo(BigDecimal.ZERO) <= 0) {
 
                 throw new IllegalArgumentException(
-                        "El peso debe ser numérico."
+                        "El peso debe ser mayor que 0."
                 );
             }
-        }
 
-    LocalDate fecha = null;
+            ingreso.setPeso(peso);
+
+        } catch (NumberFormatException ex) {
+
+            throw new IllegalArgumentException(
+                    "El peso debe ser numérico."
+            );
+        }
+    }
 
     if (fechaIngreso.getDate() != null) {
 
-        fecha = fechaIngreso.getDate()
+        LocalDate fecha = fechaIngreso.getDate()
                 .toInstant()
-                .atZone(
-                        ZoneId.systemDefault()
-                )
+                .atZone(ZoneId.of("America/Mexico_City"))
                 .toLocalDate();
-
-        if (fecha.isAfter(LocalDate.now())) {
-
-            throw new IllegalArgumentException(
-                    "La fecha de ingreso no puede ser posterior a la fecha actual."
-            );
-        }
 
         ingreso.setFechaIngreso(fecha);
     }
 
-    String horaTexto =
-            txtHoraIngreso.getText().trim();
-
-    if (!horaTexto.isBlank()) {
-
-        LocalTime hora =
-                convertirHora(
-                        horaTexto,
-                        "La hora de ingreso"
-                );
-
-        if (fecha != null
-                && fecha.equals(LocalDate.now())
-                && hora.isAfter(LocalTime.now())) {
-
-            throw new IllegalArgumentException(
-                    "La hora de ingreso no puede ser posterior a la hora actual."
-            );
-        }
-
-        ingreso.setHoraIngreso(hora);
-    }
+    ingreso.setHoraIngreso(
+            LocalTime.now(ZoneId.of("America/Mexico_City"))
+    );
 
     return ingreso;
-    }
-
+}
+   
+    
 
 public Registro obtenerRegistroFormulario() {
 
@@ -1191,6 +1393,7 @@ public Registro obtenerRegistroFormulario() {
         registro.setSalida("HOSPITALIZACION");
     }
 
+    registro.setIdRegistro(idRegistroActual);
     return registro;
 }
 
@@ -1419,17 +1622,7 @@ public Registro obtenerRegistroFormulario() {
         );
     }
 
-    public void limpiarFormularioRegistro() {
 
-        cbBuscarDoctor.setSelectedIndex(0);
-        cbBuscar.setSelectedIndex(0);
-
-        txtAlergias.setText("");
-        txtObservaciones.setText("");
-        txtDiagnostico.setText("");
-
-        buttonGroup1.clearSelection();
-    }
 
     public void limpiarFormularioEgreso() {
 
@@ -1773,20 +1966,7 @@ public Registro obtenerRegistroFormulario() {
             false
     );
 }
-    public void habilitarPestanaEgreso(
-        boolean habilitar
-) {
 
-    jTabbedPane1.setEnabledAt(
-            2,
-            habilitar
-    );
-
-    if (habilitar) {
-
-        jTabbedPane1.setSelectedIndex(2);
-    }
-}
   
    private void configurarTablaGeneral() {
 

@@ -90,6 +90,22 @@ public class DoctorDAO {
             }
         }
 
+        System.out.println("Doctores encontrados: " + doctores.size());
+        
         return doctores;
     }
+    
+   /* public static void main(String args[]){
+        try {
+            DoctorDAO dao = new DoctorDAO();
+            List<Doctor> lista = dao.listarActivos();
+            
+            for (Doctor d : lista) {
+                System.out.println(d.getNombre() + " " + d.getApellidoPaterno() + " - " + d.getEspecialidad());
+            }
+        } catch (SQLException e) {
+            System.err.println("Error al consultar doctores: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }*/
 }

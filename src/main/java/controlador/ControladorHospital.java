@@ -3,6 +3,7 @@ package controlador;
 import Interfaz.GestionPDF;
 import Interfaz.Hospital;
 import dao.HospitalDAO;
+import dao.RegistroDAO;
 import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.List;
@@ -78,9 +79,20 @@ public class ControladorHospital {
                     "Error al guardar el ingreso.\n"
                     + ex.getMessage()
             );
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            vista.mostrarError(
+                    "Error inesperado: " + ex.getClass().getSimpleName()
+                    + "\n" + ex.getMessage()
+            );
         }
     }
 
+    /**
+     * Guarda diagnóstico, alergias, observaciones y el estado
+     * del paciente (Alta / Hospitalización). Ya NO pide receta aquí.
+     */
     public void guardarRegistro() {
         try {
             Doctor doctor = vista.obtenerDoctorSeleccionado();
@@ -118,20 +130,14 @@ public class ControladorHospital {
                 );
             }
 
-            Receta receta = vista.solicitarReceta();
-
-            dao.guardarRegistroConReceta(registro, receta);
+            dao.guardarRegistroConReceta(registro, null);
 
             if ("ALTA".equalsIgnoreCase(registro.getSalida())) {
-                vista.habilitarPestanaEgreso(true);
-            }
-
-            if (receta != null) {
-                generarPdfReceta(paciente, doctor, registro, receta);
+                vista.mostrarPestanaEgreso();
             }
 
             vista.mostrarMensaje(
-                    "Registro clínico y receta guardados correctamente."
+                    "Registro clínico guardado correctamente."
             );
 
             vista.limpiarFormularioRegistro();
@@ -142,18 +148,23 @@ public class ControladorHospital {
 
         } catch (SQLException ex) {
             vista.mostrarError(
-                    "Error al guardar el registro y la receta.\n"
+                    "Error al guardar el registro.\n"
                     + ex.getMessage()
             );
 
         } catch (Exception ex) {
+            ex.printStackTrace();
             vista.mostrarError(
-                    "El registro se guardó, pero no se pudo generar el PDF.\n"
-                    + ex.getMessage()
+                    "Error inesperado: " + ex.getClass().getSimpleName()
+                    + "\n" + ex.getMessage()
             );
         }
     }
 
+    /**
+     * Guarda el egreso y, en el mismo paso, pide y guarda la receta
+     * médica ligada al registro clínico del paciente.
+     */
     public void guardarEgreso() {
         try {
             IngresoPaciente paciente =
@@ -182,8 +193,25 @@ public class ControladorHospital {
 
             dao.guardarEgreso(egreso);
 
+            RegistroDAO registroDAO = new RegistroDAO();
+            Registro registro =
+                    registroDAO.buscarPorIdIngreso(paciente.getIdIngreso());
+
+            if (registro == null) {
+                throw new IllegalStateException(
+                        "No se encontró el registro clínico de este paciente."
+                );
+            }
+
+            Receta receta = vista.solicitarReceta();
+            receta.setIdRegistro(registro.getIdRegistro());
+
+            dao.guardarRecetaSola(receta);
+
+            generarPdfReceta(paciente, registro, receta);
+
             vista.mostrarMensaje(
-                    "Egreso guardado correctamente."
+                    "Egreso y receta guardados correctamente."
             );
 
             vista.limpiarFormularioEgreso();
@@ -195,6 +223,13 @@ public class ControladorHospital {
         } catch (SQLException ex) {
             vista.mostrarError(
                     "Error al guardar el egreso.\n"
+                    + ex.getMessage()
+            );
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            vista.mostrarError(
+                    "El egreso se guardó, pero no se pudo generar la receta.\n"
                     + ex.getMessage()
             );
         }
@@ -248,7 +283,6 @@ public class ControladorHospital {
 
     private void generarPdfReceta(
             IngresoPaciente paciente,
-            Doctor doctor,
             Registro registro,
             Receta receta
     ) throws Exception {
@@ -260,11 +294,23 @@ public class ControladorHospital {
             );
         }
 
+        Object[] detallePaciente =
+                dao.obtenerDetallePaciente(paciente.getIdIngreso());
+
+        if (detallePaciente == null) {
+            throw new IllegalStateException(
+                    "No se encontró la información del paciente."
+            );
+        }
+
+        String nombrePaciente = (String) detallePaciente[0];
+        String nombreDoctor = (String) detallePaciente[8];
+
         DetalleReceta detalle = receta.getDetalles().get(0);
 
         Path rutaPDF = GestionPDF.generarReceta(
-                paciente.getNombreCompleto(),
-                doctor.getNombreCompleto(),
+                nombrePaciente,
+                nombreDoctor,
                 registro.getAlergias(),
                 registro.getDiagnostico(),
                 detalle.getMedicamento(),

@@ -1,4 +1,5 @@
 Interfaz\GestionPDF.class
+Interfaz\Hospital$4.class
 Interfaz\Hospital$FiltroLetras.class
 Componente1\ContenedorHospital.class
 modelo\Ingreso.class
@@ -14,13 +15,13 @@ Componente1\ContenedorHospital$1.class
 Interfaz\Hospital$FiltroDecimal.class
 modelo\Doctor.class
 Componente1\ContenedorHospital$RendererColores.class
+Interfaz\Hospital$3.class
 controlador\ControladorHospital.class
 modelo\Egreso.class
 Interfaz\Hospital$2.class
 dao\HospitalDAO.class
 modelo\IngresoPaciente.class
 modelo\PacienteDoctor.class
-principal\Principal.class
 Componente2\Reloj.class
 dao\DoctorDAO.class
 Interfaz\Hospital.class

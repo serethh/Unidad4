@@ -981,10 +981,7 @@ public List<IngresoPaciente> listarPendientesEgreso()
     return pacientes;
 }
        
-        public int guardarRegistroConReceta(
-        Registro registro,
-        Receta receta
-) throws SQLException {
+    public int guardarRegistroConReceta(Registro registro,Receta receta) throws SQLException {
 
     String sqlRelacion = """
         INSERT INTO clinica.paciente_doctor (
@@ -1148,6 +1145,27 @@ String sqlRegistro = """
             }
         }
 
+        String sqlEstado = """
+            UPDATE clinica.ingreso
+            SET estado = ?
+            WHERE id_ingreso = ?
+            """;
+
+        try (
+            PreparedStatement psEstado =
+                    conexion.prepareStatement(sqlEstado)
+        ) {
+            String nuevoEstado =
+                    "ALTA".equalsIgnoreCase(registro.getSalida())
+                            ? "ALTA"
+                            : "HOSPITALIZADO";
+
+            psEstado.setString(1, nuevoEstado);
+            psEstado.setInt(2, registro.getIdIngreso());
+            psEstado.executeUpdate();
+        }
+        
+        
         if (receta != null) {
 
             receta.setIdRegistro(idRegistro);
@@ -1293,6 +1311,112 @@ String sqlRegistro = """
                 System.err.println(
                         ex.getMessage()
                 );
+            }
+        }
+    }
+}
+    
+    public int guardarRecetaSola(Receta receta) throws SQLException {
+
+    String sqlReceta = """
+        INSERT INTO clinica.receta (
+            id_registro,
+            fecha_receta,
+            indicaciones_generales
+        )
+        VALUES (?, ?, ?)
+        ON CONFLICT (id_registro)
+        DO UPDATE SET
+            fecha_receta = EXCLUDED.fecha_receta,
+            indicaciones_generales = EXCLUDED.indicaciones_generales
+        RETURNING id_receta
+        """;
+
+    String sqlDetalle = """
+        INSERT INTO clinica.detalle_receta (
+            id_receta,
+            medicamento,
+            dosis,
+            frecuencia,
+            duracion,
+            via_administracion,
+            indicaciones
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """;
+
+    Connection conexion = null;
+
+    try {
+        conexion = Conexion.getConexion();
+        conexion.setAutoCommit(false);
+
+        int idReceta;
+
+        try (PreparedStatement psReceta = conexion.prepareStatement(sqlReceta)) {
+
+            psReceta.setInt(1, receta.getIdRegistro());
+            psReceta.setDate(2, java.sql.Date.valueOf(receta.getFechaReceta()));
+            psReceta.setString(3, receta.getIndicacionesGenerales());
+
+            try (ResultSet resultado = psReceta.executeQuery()) {
+                if (!resultado.next()) {
+                    throw new SQLException("No se generó el ID de la receta.");
+                }
+                idReceta = resultado.getInt("id_receta");
+                receta.setIdReceta(idReceta);
+            }
+        }
+
+        try (PreparedStatement psDetalle = conexion.prepareStatement(sqlDetalle)) {
+
+            for (DetalleReceta detalle : receta.getDetalles()) {
+
+                detalle.setIdReceta(idReceta);
+
+                psDetalle.setInt(1, idReceta);
+                psDetalle.setString(2, detalle.getMedicamento());
+                psDetalle.setString(3, detalle.getDosis());
+                psDetalle.setString(4, detalle.getFrecuencia());
+                psDetalle.setString(5, detalle.getDuracion());
+                psDetalle.setString(6, detalle.getViaAdministracion());
+                psDetalle.setString(7, detalle.getIndicaciones());
+                psDetalle.addBatch();
+            }
+
+            psDetalle.executeBatch();
+        }
+
+        conexion.commit();
+        return idReceta;
+
+    } catch (SQLException e) {
+
+        if (conexion != null) {
+            try {
+                conexion.rollback();
+            } catch (SQLException rollbackError) {
+                e.addSuppressed(rollbackError);
+            }
+        }
+
+        throw new SQLException(
+                "No se guardó la receta. La transacción fue revertida. "
+                + e.getMessage(), e
+        );
+
+    } finally {
+
+        if (conexion != null) {
+            try {
+                conexion.setAutoCommit(true);
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
+            }
+            try {
+                conexion.close();
+            } catch (SQLException e) {
+                System.err.println(e.getMessage());
             }
         }
     }
